@@ -7,15 +7,18 @@ import pyacq
 
 
 class NodeThread(pyacq.ThreadPollInput):
-    def __init__(self, input_stream, output_stream, timeout = 200, parent = None):
+    def __init__(self, input_stream, output_stream, proccesing_func,  timeout = 200, parent = None):
         pyacq.ThreadPollInput.__init__(self, input_stream, timeout = timeout, return_data=True, parent = parent)
         self.output_stream = output_stream
+        self.proccesing_func = proccesing_func
+        print(self.proccesing_func)
         #~ self.mutex = Mutex()
 
     def process_data(self, pos, data):
-        with self.mutex:
-            chunk_filtered = self.filter_engine.compute_one_chunk(data)
-        self.output_stream.send(chunk_filtered, index=pos)
+        pos2, processed_data = self.proccesing_func(pos, data)
+        self.output_stream.send(processed_data, index=pos2)
+        
+        
         
     #~ def set_params(self, engine, coefficients, nb_channel, dtype, chunksize):
         #~ assert engine in sosfilter_engines
@@ -24,7 +27,7 @@ class NodeThread(pyacq.ThreadPollInput):
             #~ self.filter_engine = EngineClass(coefficients, nb_channel, dtype, chunksize)
 
 
-class BaseProcessingNode(Pyacq.Node,  QtCore.QObject):
+class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
     """
     """
     
@@ -35,7 +38,10 @@ class BaseProcessingNode(Pyacq.Node,  QtCore.QObject):
     
     def __init__(self, parent = None, **kargs):
         QtCore.QObject.__init__(self, parent)
-        Node.__init__(self, **kargs)
+        pyacq.Node.__init__(self, **kargs)
+    
+    def _configure(self):
+        pass
     
     #~ def _configure(self, coefficients = None, engine='scipy', chunksize=None):
         #~ """
@@ -52,9 +58,9 @@ class BaseProcessingNode(Pyacq.Node,  QtCore.QObject):
             self.output.spec[k] = self.input.params[k]
     
     def _initialize(self):
-        self.thread = SosFilterThread(self.input, self.output)
-        self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
-                            self.output.params['dtype'], self.chunksize)
+        self.thread = NodeThread(self.input, self.output, self.proccesing_func)
+        #~ self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
+                            #~ self.output.params['dtype'], self.chunksize)
     
     def _start(self):
         self.thread.last_pos = None
@@ -64,15 +70,20 @@ class BaseProcessingNode(Pyacq.Node,  QtCore.QObject):
         self.thread.stop()
         self.thread.wait()
     
-    def set_coefficients(self, coefficients):
-        self.coefficients = coefficients
-        if self.initialized():
-            self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
-                                self.output.params['dtype'], self.chunksize)
+    def proccesing_func(self, pos, data):
+        raise(NotImplementedError)
+    
+    #~ def set_coefficients(self, coefficients):
+        #~ self.coefficients = coefficients
+        #~ if self.initialized():
+            #~ self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
+                                #~ self.output.params['dtype'], self.chunksize)
 
 
 class DoNothing(BaseProcessingNode):
-    
-    
+    def proccesing_func(self, pos, data):
+        print(pos, data.shape)
+        return pos, data
 
-pyacs.register_node_type(DoNothing)
+pyacq.register_node_type(DoNothing, classname='hearinglosssimulator.DoNothing')
+
