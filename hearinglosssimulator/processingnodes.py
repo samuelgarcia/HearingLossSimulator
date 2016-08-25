@@ -3,6 +3,7 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.util.mutex import Mutex
 import pyacq
+import time
 
 """
 Note:
@@ -68,6 +69,16 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
 class DoNothing(BaseProcessingNode):
     def proccesing_func(self, pos, data):
         return pos, data
+
+class DoNothingSlow(BaseProcessingNode):
+    def _configure(self, chunksize=None):
+        print(chunksize)
+        self.chunksize = chunksize
+    
+    def proccesing_func(self, pos, data):
+        time.sleep(self.chunksize/self.input.params['sample_rate']*0.8)
+        return pos, data
+
 
 class Gain(BaseProcessingNode):
     def _configure(self, factor=1.):

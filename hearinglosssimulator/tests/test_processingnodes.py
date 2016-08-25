@@ -36,7 +36,7 @@ def make_buffer():
     return sound
 
 
-def run_one_node(nodeclass, in_buffer, duration=2., background = False): #background = True
+def run_one_node(nodeclass, in_buffer, duration=2., background = False, node_conf={}): #background = True
     app = pg.mkQApp()
     
     if background:
@@ -59,7 +59,7 @@ def run_one_node(nodeclass, in_buffer, duration=2., background = False): #backgr
     else:
         node0 = nodeclass(name='node_tested')
         
-    node0.configure()
+    node0.configure(**node_conf)
     node0.input.connect(dev.output)
     node0.output.configure(**stream_spec)
     node0.initialize()
@@ -69,7 +69,7 @@ def run_one_node(nodeclass, in_buffer, duration=2., background = False): #backgr
     node0.start()
     
     def terminate():
-        print('terminate')
+        #~ print('terminate')
         dev.stop()
         node0.stop()
         app.quit()
@@ -84,25 +84,42 @@ def run_one_node(nodeclass, in_buffer, duration=2., background = False): #backgr
     if background:
         man.close()
     
-    ind = dev.head - chunksize
+    out_index = node0.output.sender._buffer.index()
     
-    out_buffer = node0.output.sender._buffer.get_data(0, ind)
+    print(dev.head, out_index)
+    assert dev.head-2*chunksize<out_index, 'Too slow!!! {} {}'.format(dev.head, out_index)
+    #~ print(ind)
+    #~ print()
+    
+    out_buffer = node0.output.sender._buffer.get_data(0, out_index)
     
     return out_buffer
 
-put.get_data(0,ind))
-    
+
 
 def test_DoNothing():
     in_buffer = make_buffer()
-    
     out_buffer = run_one_node(hls.DoNothing, in_buffer, duration=2., background=False) #background = True
-    
     helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], out_buffer)
+
+
+def test_Gain():
+    in_buffer = make_buffer()
+    out_buffer = run_one_node(hls.Gain, in_buffer, duration=2., background=False, node_conf={'factor':-1.}) #background = True
+    helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], -out_buffer)
+
+def test_DoNothingSlow():
+    in_buffer = make_buffer()
+    out_buffer = run_one_node(hls.DoNothingSlow, in_buffer, duration=2., background=False, node_conf={'chunksize':chunksize}) #background = True
+    helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], out_buffer)
+
+
 
     
 if __name__ =='__main__':
-    test_DoNothing()
+    #~ test_DoNothing()
+    #~ test_Gain()
+    test_DoNothingSlow()
     
 
 
