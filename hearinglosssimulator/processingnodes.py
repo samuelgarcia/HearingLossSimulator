@@ -4,37 +4,25 @@ import pyqtgraph as pg
 from pyqtgraph.util.mutex import Mutex
 import pyacq
 
+"""
+Note:
+  * NodeThread and BaseProcessingNode should be move to pyacq
 
+"""
 
 class NodeThread(pyacq.ThreadPollInput):
     def __init__(self, input_stream, output_stream, proccesing_func,  timeout = 200, parent = None):
         pyacq.ThreadPollInput.__init__(self, input_stream, timeout = timeout, return_data=True, parent = parent)
         self.output_stream = output_stream
         self.proccesing_func = proccesing_func
-        print(self.proccesing_func)
-        #~ self.mutex = Mutex()
 
     def process_data(self, pos, data):
         pos2, processed_data = self.proccesing_func(pos, data)
         self.output_stream.send(processed_data, index=pos2)
-        
-        
-        
-    #~ def set_params(self, engine, coefficients, nb_channel, dtype, chunksize):
-        #~ assert engine in sosfilter_engines
-        #~ EngineClass = sosfilter_engines[engine]
-        #~ with self.mutex:
-            #~ self.filter_engine = EngineClass(coefficients, nb_channel, dtype, chunksize)
-
 
 class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
-    """
-    """
-    
     _input_specs = {'signals' : dict(streamtype = 'signals')}
     _output_specs = {'signals' : dict(streamtype = 'signals')}
-    
-    _proccessing_step = None
     
     def __init__(self, parent = None, **kargs):
         QtCore.QObject.__init__(self, parent)
@@ -42,20 +30,17 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
     
     def _configure(self):
         pass
+        #~ print(self.name, self.output.params)
     
-    #~ def _configure(self, coefficients = None, engine='scipy', chunksize=None):
-        #~ """
-        #~ Set the coefficient of the filter.
-        #~ See http://scipy.github.io/devdocs/generated/scipy.signal.sosfilt.html for details.
-        #~ """
-        #~ self.set_coefficients(coefficients)
-        #~ self.engine = engine
-        #~ self.chunksize = chunksize
-
     def after_input_connect(self, inputname):
+        # this automatically propagate 'sample_rate', 'dtype', 'shape'
+        # to output spec
+        # in case of a Node that change sample_rate or the number of channel 
+        # this must be overwirtten
         self.nb_channel = self.input.params['shape'][1]
         for k in ['sample_rate', 'dtype', 'shape']:
             self.output.spec[k] = self.input.params[k]
+        
     
     def _initialize(self):
         self.thread = NodeThread(self.input, self.output, self.proccesing_func)
@@ -82,8 +67,15 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
 
 class DoNothing(BaseProcessingNode):
     def proccesing_func(self, pos, data):
-        print(pos, data.shape)
         return pos, data
 
-pyacq.register_node_type(DoNothing, classname='hearinglosssimulator.DoNothing')
+class Gain(BaseProcessingNode):
+    def _configure(self, factor=1.):
+        self.factor = factor
+    def proccesing_func(self, pos, data):
+        #~ print(pos, data.shape, self.name, data[:10], )
+        return pos, data*self.factor
+
+
+
 
