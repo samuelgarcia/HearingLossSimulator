@@ -6,6 +6,11 @@
 #define max_chunksize %(max_chunksize)d
 #define nb_level %(nb_level)d
 
+# define levelavgsize %(levelavgsize)d
+# define calibration %(calibration)8.4f
+#define levelstep %(levelstep)8.4f
+#define levelmax %(levelmax)d
+
 __kernel void sos_filter(__global  float *input, __global  float *output, __constant  float *coefficients, 
             __global float *zi, int chunksize, int direction, int nb_section) {
     /*
@@ -70,6 +75,45 @@ __kernel void forward_filter(__global  float *input, __global  float *output, __
 __kernel void backward_filter(__global  float *input, __global  float *output, __constant  float *coefficients, __global float *zi,  int nb_section) {
     sos_filter(input, output, coefficients, zi, backward_chunksize, -1, nb_section);
 }
+
+
+
+
+__kernel void estimate_leveldb(__global  float *input, __global  float *levelindexes, __global float *previouslevel, __constant float *expdecays, long chunkcount) {
+
+    int chan = get_global_id(0); // f  = freq indice
+    
+    int offset_buf = chan*chunksize;
+    int offset_level = chan*levelavgsize;
+    
+    int pos = ((chunksize*chunkcount-1)%%levelavgsize);
+
+    float prevlevel = previouslevel[offset_level+pos];
+    float avlevel;
+    float expdecay = expdecays[f];
+    
+    for (int s=0; s<chunksize;s++) {
+        //for (int k=levelavgsize-1; k>0; k--) previouslevel[offset_level+k] = previouslevel[offset_level+k-1];
+        
+        prevlevel = max( fabs(input[offset_buf+s]), prevlevel*expdecay);
+        pos += 1;
+        if (pos == levelavgsize) pos=0;
+        previouslevel[offset_level+pos] = prevlevel;
+        
+        //average on a window
+        avlevel = 0.0;
+        for (int k=0; k<levelavgsize; k++) avlevel += (previouslevel[offset_level+k]);
+        avlevel /= levelavgsize;
+        
+        //to dB and index dB
+        avlevel = (20*log10(avlevel) + calibration);
+        if (avlevel>=levelmax) avlevel = levelmax-levelstep;
+        if (avlevel<0.0f) avlevel = 0.0f;
+        levelindexes[offset_buf+s] = avlevel/levelstep;
+
+    }
+}
+
 
 
 __kernel void dynamic_sos_filter(__global  float *input, __global  float * coeff_indexes, __global  float *output, __global float *coefficients, __global float *zis, int nb_section) {
