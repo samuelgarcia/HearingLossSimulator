@@ -90,7 +90,7 @@ def moving_erb_noise(length, samplerate = 44100., f1 = 200, f2 = 1200, speed = .
     w = np.hanning(chunksize)
     sound = np.zeros(length)
     for i in range(length//chunksize*2-1):
-        sl = slice(i*chunksize/2, i*chunksize/2+chunksize)
+        sl = slice(i*chunksize//2, i*chunksize//2+chunksize)
         f = trajectory[i]
         s = erb_noise(chunksize,  samplerate = samplerate, f = f, ampl = ampl)
         sound[sl] += (s * w)

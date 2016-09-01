@@ -1,12 +1,23 @@
+import os
+import time
+
 import numpy as np
+import scipy.signal
+import scipy.interpolate
+
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from pyqtgraph.util.mutex import Mutex
-import pyacq
-import time
+
 import pyopencl
 mf = pyopencl.mem_flags
-import os
+
+
+import pyacq
+
+from .filterfactory import (gammatone, asymmetric_compensation_coeffs, loggammachirp, erbspace)
+from .tools import sosfreqz
+
 
 
 """
@@ -145,82 +156,7 @@ class Gain(BaseProcessingNode):
         #~ print(pos, data.shape, self.name, data[:10], )
         return pos, data*self.factor
 
-
-
-class CL_SosFilter(CL_BaseProcessingNode):
-    """
-    Node for conputing sos filter on multi channel.
     
-    """
-    def _configure(self, coefficients=None, chunksize=512, backward_chunksize=1024, **kargs):
-        """
-        Parameters for configure
-        -------
-        coefficients: per channel sos filter coefficient shape (nb_channel, nb_section, 6)
-        
-        """
-        CL_BaseProcessingNode._configure(self, **kargs)
-        
-        self.coefficients = coefficients
-        self.chunksize = chunksize
-        self.backward_chunksize = backward_chunksize
-        
-        assert self.chunksize is not None, 'chunksize for opencl must be fixed'
-        
-        self.coefficients = self.coefficients.astype('float32')
-        assert self.coefficients.ndim == 3
-        if not self.coefficients.flags['C_CONTIGUOUS']:
-            self.coefficients = self.coefficients.copy()
-        self.nb_section = self.coefficients.shape[1]
-
-        #~ assert self.dtype == np.dtype('float32')
-        #~ assert self.coefficients.shape[0]==self.nb_channel, 'wrong coefficients.shape'
-        assert self.coefficients.shape[2]==6, 'wrong coefficients.shape'
-
-
-    def initlalize_cl(self):
-        self.dtype = self.input.params['dtype']
-        assert self.dtype == np.dtype('float32')
-        assert self.coefficients.shape[0]==self.nb_channel, 'wrong coefficients.shape'
-        
-        #host arrays
-        self.zi1 = np.zeros((self.nb_channel, self.nb_section, 2), dtype= self.dtype)
-        self.output1 = np.zeros((self.nb_channel, self.chunksize), dtype= self.dtype)
-        
-        #GPU buffers
-        self.coefficients_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.coefficients)
-        self.zi1_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi1)
-        self.input1_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE, size=self.output1.nbytes)
-        self.output1_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE, size=self.output1.nbytes)
-        
-        # compialtion
-        kernel = cl_code%dict(forward_chunksize=self.chunksize, backward_chunksize=self.backward_chunksize,
-                                                            nb_channel=self.nb_channel, max_chunksize=max(self.chunksize, self.backward_chunksize))
-        prg = pyopencl.Program(self.ctx, kernel)
-        self.opencl_prg = prg.build(options='-cl-mad-enable')
-        
-        self.global_size = None
-        self.local_size = None
-        self.global_size = (self.nb_channel, self.nb_section,)
-        self.local_size = (1, self.nb_section, )
-        
-    
-    def proccesing_func(self, pos, data):
-        
-        chunk = data.T
-        if not chunk.flags['C_CONTIGUOUS']:
-            chunk = chunk.copy()
-        pyopencl.enqueue_copy(self.queue,  self.input1_cl, chunk)
-        
-        event = self.opencl_prg.forward_filter(self.queue, self.global_size, self.local_size,
-                                self.input1_cl, self.output1_cl, self.coefficients_cl, self.zi1_cl, np.int32(self.nb_section))
-        event.wait()
-        
-        pyopencl.enqueue_copy(self.queue,  self.output1, self.output1_cl)
-        chunk_filtered = self.output1.T.copy()
-        return pos, chunk_filtered
-        
-
 
 
 class MainProcessing(CL_BaseProcessingNode):
@@ -229,12 +165,26 @@ class MainProcessing(CL_BaseProcessingNode):
     
     Variables:
     ----
-    nb_channel: nb channel input
-    tot_channel : total channel = nb_channelXnb_band
+    nb_freq_band: nb band of filter for each channel
+    low_freq: first filter (Hz)
+    hight_freq = last filter (Hz)
+    tau_level: (s) decay for level estimation
+    smooth_time:  (s)  smothin windows  for level estimation
+    level_step: step (dB) for precomputing hpaf filters. The smaller = finer garin but high memory for GPU
+    level_max: max level (dB) for level
+    calibration: equivalent dbSPL for 0dBFs. 0dBFs is one sinus of amplitude 1
+                    default is 93.979400086720375 dBSPL is equivalent when amplitude is directly the pressure
+                    so 0dbSPL is 2e-5Pa
+    loss_weigth: a list (size nb_channel) of list (size nb loss measurement) of pair (freq, loss_db)
+        Example 1 channel: [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]
     
     
     """
-    def _configure(self, nb_freq_band=16, chunksize=512, backward_chunksize=1024, **kargs):
+    def _configure(self, nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
+                tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
+                calibration =  93.979400086720375,
+                loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
+                chunksize=512, backward_chunksize=1024, **kargs):
         """
         Parameters for configure
         -------
@@ -242,46 +192,30 @@ class MainProcessing(CL_BaseProcessingNode):
         
         """
         CL_BaseProcessingNode._configure(self, **kargs)
-        
+
         self.nb_freq_band = nb_freq_band
+        self.low_freq = low_freq
+        self.hight_freq = hight_freq
+        self.tau_level = tau_level
+        self.smooth_time = smooth_time
+        self.level_step = level_step
+        self.level_max = level_max
+        self.calibration = calibration
+        self.loss_weigth = loss_weigth
         self.chunksize = chunksize
         self.backward_chunksize = backward_chunksize
         
-        
-        
-        
-        
-        assert self.chunksize is not None, 'chunksize for opencl must be fixed'
-        
-        self.coefficients = self.coefficients.astype('float32')
-        assert self.coefficients.ndim == 3
-        if not self.coefficients.flags['C_CONTIGUOUS']:
-            self.coefficients = self.coefficients.copy()
-        self.nb_section = self.coefficients.shape[1]
-
-        #~ assert self.dtype == np.dtype('float32')
-        #~ assert self.coefficients.shape[0]==self.nb_channel, 'wrong coefficients.shape'
-        assert self.coefficients.shape[2]==6, 'wrong coefficients.shape'
-        
-        # TODO filters init
-        
-        #TODO expdecays init
-        #~ self.smooth_time = smooth_time
-        #~ samedecay = np.exp(-2./tau1/samplerate)
-        #~ print samedecay
-        #~ self.expdecays = np.ones((self.nfreq), dtype = self.dtype) * samedecay
-
 
     def after_input_connect(self, inputname):
         CL_BaseProcessingNode.after_input_connect(self, inputname)
 
         self.nb_channel = self.input.params['shape'][1]
         self.sample_rate = self.input.params['sample_rate']
+        self.dtype = self.input.params['dtype']
         
         
         for k in ['sample_rate', 'dtype', 'shape']:
             self.output.spec[k] = self.input.params[k]
-        
         
         self.total_channel = self.nb_freq_band*self.nb_channel
         
@@ -289,7 +223,99 @@ class MainProcessing(CL_BaseProcessingNode):
         for step in steps:
             self._output_specs[step] = dict(streamtype = 'signals', shape=(-1,self.total_channel),
                     sample_rate=self.sample_rate)
+    
+    
+    def make_filters(self):
         
+        assert len(self.loss_weigth) == self.nb_channel, 'The nb_channel given in loss_weight is not nb_channel {} {}'.format(len(self.loss_weigth), self.nb_channel)
+        
+        
+        self.freqs = erbspace(self.low_freq,self.hight_freq, self.nb_freq_band)
+        
+        # compute losses at ERB freq
+        self.losses = [ ]
+        for c in range(self.nb_channel):
+            lw = self.loss_weigth[c]
+            lw = [(0,0)]+lw + [(self.sample_rate/2, 0.)]
+            loss_freq, loss_db = np.array(lw).T
+            interp = scipy.interpolate.interp1d(loss_freq, loss_db)
+            self.losses.append(interp(self.freqs))
+        self.losses = np.array(self.losses)
+        
+        # pgc filter coefficient
+        b1 = 1.81
+        c1 = -2.96
+        #~ b1 = 1.019
+        #~ c1 = 1. 
+        b2 = 2.17
+        c2 = 2.2
+        
+        p0=2
+        p1=1.7818*(1-0.0791*b2)*(1-0.1655*abs(c2))
+        p2=0.5689*(1-0.1620*b2)*(1-0.0857*abs(c2))
+        p3=0.2523*(1-0.0244*b2)*(1+0.0574*abs(c2))
+        p4=1.0724
+
+        pgcfilters_1ch = loggammachirp(self.freqs, self.sample_rate, b=b1, c=c1).astype(self.dtype)
+        
+        #noramlize PGC to 0 db at maximum 
+        for f, freq in enumerate(self.freqs):
+            w, h = sosfreqz(pgcfilters_1ch[f,:,:], worN =2**16,)
+            gain = np.max(np.abs(h))
+            pgcfilters_1ch[f,0, :3] /= gain
+        
+        self.coefficients_pgc = np.concatenate([pgcfilters_1ch]*self.nb_channel, axis =0)
+
+        # Construct hpaf filters : pre compute for all sound levels for each freq
+        self.levels = np.arange(0, self.level_max,self.level_step)
+        nlevel = self.levels.size
+        print('nlevel', nlevel)
+        
+        # construct hpaf depending on loss
+        self.coefficients_hpaf = np.zeros((self.nb_channel*self.nb_freq_band, len(self.levels), 4, 6), dtype = self.dtype)
+        for c in range(self.nb_channel):
+            w = -self.losses[c,:]/30.
+            frat1r = -w/65/2.
+            frat0r = 1+w/2.
+            for l, level in enumerate(self.levels):
+                frat = frat0r + frat1r*level
+                freqs2 = self.freqs*frat
+                self.coefficients_hpaf[c*self.nb_freq_band:(c+1)*self.nb_freq_band , l, : , : ] = asymmetric_compensation_coeffs(freqs2, self.sample_rate, b2,c2,p0,p1,p2,p3,p4)
+        
+        NFFT = 2**16
+        
+        #noramlize for highest level
+        for c in range(self.nb_channel):
+            for f, freq in enumerate(self.freqs):
+                #~ filter = np.concatenate([pgcfilters_1ch[f,:,:], self.coefficients_hpaf[c*self.nb_freq_band+f , -1, : , : ], ], axis = 0)
+                filter = np.concatenate([pgcfilters_1ch[f,:,:], self.coefficients_hpaf[c*self.nb_freq_band+f , -1, : , : ],pgcfilters_1ch[f,:,:] ], axis = 0)
+                w, h = sosfreqz(filter, worN =NFFT)
+                gain = np.max(np.abs(h))
+                self.coefficients_hpaf[c*self.nb_freq_band+f , :, 0 , :3 ] /= gain
+        
+        # compensate final gain for sum
+        all = np.zeros(NFFT)
+        for f, freq in enumerate(self.freqs):
+            all_filter = np.concatenate([self.coefficients_pgc[f,:,:],self.coefficients_hpaf[f,-1,:,:], self.coefficients_pgc[f,:,:]], axis = 0)
+            w, h = sosfreqz(all_filter,worN = NFFT)
+            all += np.abs(h) 
+        
+        # check this
+        fft_freqs = w/np.pi*(self.sample_rate/2.)
+        all = all[(fft_freqs>self.freqs[0]) & (fft_freqs<self.freqs[-1])]
+        self.dbgain_final = -np.mean(20*np.log10(all))
+        self.gain_final = 10**(self.dbgain_final/20.)
+        
+        print('dbgain_final', self.dbgain_final)
+        
+        
+        # make decays per band
+        samedecay = np.exp(-2./self.tau_level/self.sample_rate)
+        # same decay for all band
+        self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
+        # one decay per band (for testing)
+        #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
+    
     
     def initlalize_cl(self):
         """
@@ -301,25 +327,30 @@ class MainProcessing(CL_BaseProcessingNode):
           * pgc2: 
         
         """
+        self.make_filters()
+        
+        
         self.dtype = self.input.params['dtype']
         assert self.dtype == np.dtype('float32')
         #~ assert self.coefficients.shape[0]==self.nb_channel, 'wrong coefficients.shape'
         
+        print(self.coefficients_hpaf.shape)
+        
         #host arrays
         self.in_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.out_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
-        self.zi_pgc1 = np.zeros((self.total_channel, self.nb_section, 2), dtype= self.dtype)
+        self.zi_pgc1 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
-        #~ self.previouslevel = np.zeros((self.total_channel, smooth), dtype = self.dtype)# TODO 
-        self.previouslevel = np.zeros((self.total_channel, smooth), dtype = self.dtype)
+        smooth_sample = int(self.sample_rate*self.smooth_time)
+        self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
         self.out_levels = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         
         self.out_hpaf = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
-        self.zi_hpaf = np.zeros((self.total_channel, self.nb_section, 2), dtype= self.dtype)
+        self.zi_hpaf = np.zeros((self.total_channel, self.coefficients_hpaf.shape[2], 2), dtype= self.dtype)
         
         self.in_pgc2 = np.zeros((self.total_channel, self.backward_chunksize), dtype= self.dtype)
         self.out_pgc2 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
-        self.zi_pgc2 = np.zeros((self.total_channel, self.nb_section, 2), dtype= self.dtype)
+        self.zi_pgc2 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
         
         #GPU buffers
@@ -329,8 +360,8 @@ class MainProcessing(CL_BaseProcessingNode):
         self.out_pgc1_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_pgc1)
         self.zi_pgc1_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_pgc1)
         
-        self.expdecays_cl = cl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.expdecays)
-        self.previouslevel_cl = cl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.previouslevel)
+        self.expdecays_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.expdecays)
+        self.previouslevel_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.previouslevel)
         self.out_levels_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_levels)
         
         self.out_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_hpaf)
@@ -344,62 +375,71 @@ class MainProcessing(CL_BaseProcessingNode):
         
         # compialtion
         kernel = cl_code%dict(forward_chunksize=self.chunksize, backward_chunksize=self.backward_chunksize,
-                                                            nb_channel=self.total_channel, max_chunksize=max(self.chunksize, self.backward_chunksize))
+                                            nb_channel=self.total_channel, max_chunksize=max(self.chunksize, self.backward_chunksize),
+                                            nb_level=len(self.levels),
+                                            levelavgsize=smooth_sample,
+                                            calibration=self.calibration,
+                                            levelstep=self.level_step,
+                                            levelmax=self.level_max,
+                                                            )
         prg = pyopencl.Program(self.ctx, kernel)
         self.opencl_prg = prg.build(options='-cl-mad-enable')
         
         
     
     def proccesing_func(self, pos, data):
-        self.chunkcount = #TODO
         
         chunk = data.T
         if not chunk.flags['C_CONTIGUOUS']:
+            #~ print('copy because not C_CONTIGUOUS')
             chunk = chunk.copy()
-        pyopencl.enqueue_copy(self.queue,  self.input1_cl, chunk)
+        
+        pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, chunk)
         
         #pgc1
-        global_size = (self.total_channel, self.nb_section,)
-        local_size = (1, self.nb_section, )
+        nb_section = self.coefficients_pgc.shape[1]
+        global_size = (self.total_channel, nb_section,)
+        local_size = (1, nb_section, )
         event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
-                                self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(self.nb_section))
+                                self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
         event.wait()
         
         #levels
-        global_size = (self.nchannel, )
+        chunkcount = pos // self.chunksize
+        global_size = (self.nb_channel, )
         local_size = (1,  )
         event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
-                                self.out_pgc1_cl, self.out_levels_cl, self.previouslevel_cl, self.expdecays_cl, np.int64(self.chunkcount))  #TODO change chnkcount by pos directly
+                                self.out_pgc1_cl, self.out_levels_cl, self.previouslevel_cl, self.expdecays_cl, np.int64(chunkcount))  #TODO change chnkcount by pos directly
         event.wait()
         
         # hpaf
-        global_size = (self.nchannel, self.ncascade,)
-        local_size = (1, self.ncascade, )
+        nb_section = self.coefficients_hpaf.shape[2]
+        global_size = (self.nb_channel, nb_section,)
+        local_size = (1, nb_section, )
         event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.out_hpaf_cl, self.coefficients_hpaf_cl,
-                                self.zi_hpaf_cl, np.int32(self.nb_section))
+                                self.zi_hpaf_cl, np.int32(nb_section))
         event.wait()
         
         # pgc2
         # #TODO copy
-        
-        global_size = (self.total_channel, self.nb_section,)
-        local_size = (1, self.nb_section, )
+        nb_section = self.coefficients_pgc.shape[1]
+        global_size = (self.total_channel, nb_section,)
+        local_size = (1, nb_section, )
         event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
-                                self.in_pgc2_cl, self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(self.nb_section))
+                                self.in_pgc2_cl, self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
         event.wait()
         
         pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
         
         
         # sum
-        for chan in range(self.nchannelout):
-            #~ self.output_buffers[0].nparray[chan, :] = np.mean(self.input_buffers[0].nparray[chan*self.blocksize:(chan+1)*self.blocksize, :], axis = 0)
-            self.output_buffers[0].nparray[chan, :] = np.sum(self.input_buffers[0].nparray[chan*self.blocksize:(chan+1)*self.blocksize, :], axis = 0)
-
-
-
-        pyopencl.enqueue_copy(self.queue,  self.output1, self.output1_cl)
-        chunk_filtered = self.output1.T.copy()
-        return pos, chunk_filtered
+        out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
+        for chan in range(self.nb_channel):
+            out_buffer[chan, :] = np.sum(self.out_pgc2[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
+        
+        #gain
+        out_buffer *= self.gain_final
+        
+        return pos, out_buffer.T
 

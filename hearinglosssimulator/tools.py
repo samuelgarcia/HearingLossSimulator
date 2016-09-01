@@ -7,6 +7,7 @@ import soundfile
 
 
 def sosfreqz(coeff,worN = 4096):
+    # in scipy soon
     w, h = scipy.signal.freqz(coeff[0, :3], coeff[0, 3:], worN=  worN)
     for i in range(1, coeff.shape[0]):
         w, rowh = scipy.signal.freqz(coeff[i, :3], coeff[i, 3:], worN= worN)

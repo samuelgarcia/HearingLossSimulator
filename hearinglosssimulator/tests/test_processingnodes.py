@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 #~ exit()
 
-nb_channel = 2
+nb_channel = 1
 sample_rate =44100.
 chunksize = 512
 backward_chunksize = 1024
@@ -117,7 +117,7 @@ def test_DoNothingSlow():
     helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], out_buffer)
 
 
-
+"""
 def test_CL_SosFilter():
     nb_section = 8
     
@@ -153,14 +153,27 @@ def test_CL_SosFilter():
     
     assert np.max(residual)<1e-5, 'CL_SosFilter online differt from offline'
 
+"""
 
 
+def test_MainProcessing1():
+    in_buffer = hls.moving_erb_noise(length)[:, None]
+    
+    node_conf = dict(nb_freq_band=5, level_step=10)
+    online_arr = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
+    
+    
+    
+    
+    
+    
+    
     
 if __name__ =='__main__':
     #~ test_DoNothing()
     #~ test_Gain()
     #~ test_DoNothingSlow()
     
-    test_CL_SosFilter()
+    test_MainProcessing1()
 
 
