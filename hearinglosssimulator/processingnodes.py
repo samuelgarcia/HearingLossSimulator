@@ -44,7 +44,8 @@ class NodeThread(pyacq.ThreadPollInput):
 
     def process_data(self, pos, data):
         pos2, processed_data = self.proccesing_func(pos, data)
-        self.output_stream.send(processed_data, index=pos2)
+        if pos2 is not None:
+            self.output_stream.send(processed_data, index=pos2)
 
 class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
     _input_specs = {'signals' : dict(streamtype = 'signals')}
@@ -69,7 +70,7 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
         
     
     def _initialize(self):
-        self.thread = NodeThread(self.input, self.output, self.proccesing_func)
+        self.thread = NodeThread(self.input, self.outputs['signals'], self.proccesing_func)
         #~ self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
                             #~ self.output.params['dtype'], self.chunksize)
     
@@ -184,7 +185,7 @@ class MainProcessing(CL_BaseProcessingNode):
                 tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
                 calibration =  93.979400086720375,
                 loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
-                chunksize=512, backward_chunksize=1024, **kargs):
+                chunksize=512, backward_chunksize=1024, debug_mode=False, **kargs):
         """
         Parameters for configure
         -------
@@ -205,6 +206,8 @@ class MainProcessing(CL_BaseProcessingNode):
         self.chunksize = chunksize
         self.backward_chunksize = backward_chunksize
         
+        self.debug_mode = debug_mode
+        
 
     def after_input_connect(self, inputname):
         CL_BaseProcessingNode.after_input_connect(self, inputname)
@@ -219,10 +222,12 @@ class MainProcessing(CL_BaseProcessingNode):
         
         self.total_channel = self.nb_freq_band*self.nb_channel
         
-        steps = ['pgc1', 'levels', 'hpaf', 'pgc2']
-        for step in steps:
-            self._output_specs[step] = dict(streamtype = 'signals', shape=(-1,self.total_channel),
-                    sample_rate=self.sample_rate)
+        if self.debug_mode:
+            steps = ['pgc1', 'levels', 'hpaf', 'pgc2']
+            for step in steps:
+                self._output_specs[step] = dict(streamtype = 'signals', shape=(-1,self.total_channel),
+                        sample_rate=self.sample_rate)
+            self.outputs = {name:pyacq.OutputStream(spec=spec, node=self, name=name) for name, spec in self._output_specs.items()}
     
     
     def make_filters(self):
@@ -336,6 +341,9 @@ class MainProcessing(CL_BaseProcessingNode):
         
         print(self.coefficients_hpaf.shape)
         
+        self.out_hpaf_ringbuffer = pyacq.RingBuffer(shape=(self.backward_chunksize, self.total_channel), 
+                                    dtype=self.dtype, double=True, fill=0., axisorder=(1,0))
+        
         #host arrays
         self.in_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.out_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
@@ -403,6 +411,10 @@ class MainProcessing(CL_BaseProcessingNode):
         event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
                                 self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
         event.wait()
+        if self.debug_mode:
+            pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
+            self.outputs['pgc1'].send(self.out_pgc1.T, index=pos)
+        
         
         #levels
         chunkcount = pos // self.chunksize
@@ -411,6 +423,10 @@ class MainProcessing(CL_BaseProcessingNode):
         event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.previouslevel_cl, self.expdecays_cl, np.int64(chunkcount))  #TODO change chnkcount by pos directly
         event.wait()
+        if self.debug_mode:
+            pyopencl.enqueue_copy(self.queue,  self.out_levels, self.out_levels_cl)
+            self.outputs['levels'].send(self.out_levels.T, index=pos)
+        
         
         # hpaf
         nb_section = self.coefficients_hpaf.shape[2]
@@ -420,26 +436,51 @@ class MainProcessing(CL_BaseProcessingNode):
                                 self.out_pgc1_cl, self.out_levels_cl, self.out_hpaf_cl, self.coefficients_hpaf_cl,
                                 self.zi_hpaf_cl, np.int32(nb_section))
         event.wait()
+        if self.debug_mode:
+            pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.out_hpaf_cl)
+            self.outputs['hpaf'].send(self.out_hpaf.T, index=pos)
+        
+        # get out_hpaf in host and put it in ring buffer
+        pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.out_hpaf_cl)
+        self.out_hpaf_ringbuffer.new_chunk(self.out_hpaf.T, index=pos)
+        # get the (longer) backward buffer
+        in_pgc2 = self.out_hpaf_ringbuffer.get_data(pos-self.backward_chunksize, pos)
+        self.in_pgc2[:] = in_pgc2.T
+        # and send it baack to device
+        pyopencl.enqueue_copy(self.queue,  self.in_pgc2_cl, self.in_pgc2)
+        
+        pos2 = pos - self.backward_chunksize + self.chunksize
+        #~ print('ici', 'pos', pos,  'pos2', pos2, in_pgc2.shape)
+        
+        if pos2<=0:
+            return None, None
         
         # pgc2
-        # #TODO copy
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
         event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
                                 self.in_pgc2_cl, self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
         event.wait()
-        
         pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
+        out_pgc2_short = self.out_pgc2[:, :self.chunksize]
         
         
-        # sum
+        #~ if pos2>0:
+        
+        if self.debug_mode:
+            
+            
+            self.outputs['pgc2'].send(out_pgc2_short.T, index=pos2)
+        
+        
+        # sum by channel block
         out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
         for chan in range(self.nb_channel):
-            out_buffer[chan, :] = np.sum(self.out_pgc2[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
+            out_buffer[chan, :] = np.sum(out_pgc2_short[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
         
         #gain
         out_buffer *= self.gain_final
         
-        return pos, out_buffer.T
+        return pos2, out_buffer.T
 

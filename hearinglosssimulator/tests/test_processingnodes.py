@@ -24,21 +24,6 @@ stream_spec = dict(protocol='tcp', interface='127.0.0.1', transfermode='sharedme
                 dtype='float32', buffer_size=length, double=False, sample_rate=sample_rate)
 
 
-
-def make_buffer():
-    
-    times = np.arange(length)/sample_rate
-    buffer = np.random.rand(length, nb_channel) *.3
-    f1, f2, speed = 500., 3000., .05
-    freqs = (np.sin(np.pi*2*speed*times)+1)/2 * (f2-f1) + f1
-    phases = np.cumsum(freqs/sample_rate)*2*np.pi
-    ampl = np.abs(np.sin(np.pi*2*speed*8*times))*.8
-    buffer += (np.sin(phases)*ampl)[:, None]
-    sound = buffer.astype('float32')
-    
-    return sound
-
-
 def run_one_node(nodeclass, in_buffer, duration=2., background = False, node_conf={}): #background = True
     app = pg.mkQApp()
     
@@ -64,7 +49,8 @@ def run_one_node(nodeclass, in_buffer, duration=2., background = False, node_con
         
     node0.configure(**node_conf)
     node0.input.connect(dev.output)
-    node0.output.configure(**stream_spec)
+    for out_name in node0.outputs.keys():
+        node0.outputs[out_name].configure(**stream_spec)
     node0.initialize()
     node0.input.set_buffer(size=length)
 
@@ -87,32 +73,42 @@ def run_one_node(nodeclass, in_buffer, duration=2., background = False, node_con
     if background:
         man.close()
     
-    out_index = node0.output.sender._buffer.index()
+    out_index = node0.outputs['signals'].sender._buffer.index()
     
     #~ print(dev.head, out_index)
-    assert dev.head-2*chunksize<out_index, 'Too slow!!! {} {}'.format(dev.head, out_index)
+    #~ assert dev.head-2*chunksize<out_index, 'Too slow!!! {} {}'.format(dev.head, out_index)
     #~ print(ind)
     #~ print()
     
-    out_buffer = node0.output.sender._buffer.get_data(0, out_index)
+    out_buffers = {}
+    for k in node0.outputs.keys():
+        out_buffers[k] = node0.outputs[k].sender._buffer.get_data(0, out_index)
+        
+    #~ out_buffer = node0.output.sender._buffer.get_data(0, out_index)
     
-    return out_buffer
+    return node0, out_buffers
 
 
 
 def test_DoNothing():
-    in_buffer = make_buffer()
+    in_buffer = hls.moving_erb_noise(length)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+
     out_buffer = run_one_node(hls.DoNothing, in_buffer, duration=2., background=False) #background = True
     helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], out_buffer)
 
 
 def test_Gain():
-    in_buffer = make_buffer()
+    in_buffer = hls.moving_erb_noise(length)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+
     out_buffer = run_one_node(hls.Gain, in_buffer, duration=2., background=False, node_conf={'factor':-1.}) #background = True
     helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], -out_buffer)
 
 def test_DoNothingSlow():
-    in_buffer = make_buffer()
+    in_buffer = hls.moving_erb_noise(length)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+
     out_buffer = run_one_node(hls.DoNothingSlow, in_buffer, duration=2., background=False, node_conf={'chunksize':chunksize}) #background = True
     helper.assert_arrays_equal(in_buffer[:out_buffer.shape[0]], out_buffer)
 
@@ -157,13 +153,34 @@ def test_CL_SosFilter():
 
 
 def test_MainProcessing1():
-    in_buffer = hls.moving_erb_noise(length)[:, None]
-    
-    node_conf = dict(nb_freq_band=5, level_step=10)
-    online_arr = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
-    
+    #~ in_buffer = hls.moving_erb_noise(length)
+    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=100., f2=2000.,  ampl = .5)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     
+    node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
+    
+    
+    print(node0.freqs)
+    
+    freq_band = 2
+    
+    fig, ax = plt.subplots(nrows = 6, sharex=True, sharey=True)
+    ax[0].plot(in_buffer[:, 0], color = 'k')
+    
+    steps = ['pgc1', 'levels', 'hpaf', 'pgc2']
+    for i, k in enumerate(steps):
+        
+        online_arr = online_arrs[k]
+        print(online_arr.shape)
+        ax[i+1].plot(online_arr[:, freq_band], color = 'b')
+    #~ ax[0].plot(offline_arr[:, 0], color = 'g')
+    
+    out_buffer = online_arrs['signals']
+    ax[-1].plot(out_buffer[:, 0], color = 'k')
+    
+    plt.show()
     
     
     
