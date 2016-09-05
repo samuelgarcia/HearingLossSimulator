@@ -397,38 +397,22 @@ class MainProcessing(CL_BaseProcessingNode):
     
     def proccesing_func(self, pos, data):
         
+        # split each channels in nb_freq_band
         for chan in range(self.nb_channel):
             self.in_pgc1[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :] = data[:, chan]
             
-            #~ out_buffer[chan, :] = np.sum(out_pgc2_short[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
-        
-        
-        
-        #~ chunk = data.T
-        #~ if not chunk.flags['C_CONTIGUOUS']:
-            #~ print('copy because not C_CONTIGUOUS')
-            #~ chunk = chunk.copy()
-            
-        #~ pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, chunk)
-        #~ self.in_pgc1[:] = chunk
         pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, self.in_pgc1)
-
         
         #pgc1
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
-        #~ print()
-        #~ print('pos', pos, nb_section)
-        #~ print(chunk.shape)
-        #~ print(global_size, local_size)
         event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
                                 self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
         event.wait()
         if self.debug_mode:
-            
             ev = pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
-            ev.wait()
+            #~ ev.wait()
             #~ print(chunk)
             #~ print(self.out_pgc1.shape)
             #~ print(self.out_pgc1)
@@ -438,7 +422,7 @@ class MainProcessing(CL_BaseProcessingNode):
         
         #levels
         chunkcount = pos // self.chunksize
-        global_size = (self.nb_channel, )
+        global_size = (self.total_channel, )
         local_size = (1,  )
         event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.previouslevel_cl, self.expdecays_cl, np.int64(chunkcount))  #TODO change chnkcount by pos directly
@@ -450,7 +434,7 @@ class MainProcessing(CL_BaseProcessingNode):
         
         # hpaf
         nb_section = self.coefficients_hpaf.shape[2]
-        global_size = (self.nb_channel, nb_section,)
+        global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
         event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.out_hpaf_cl, self.coefficients_hpaf_cl,

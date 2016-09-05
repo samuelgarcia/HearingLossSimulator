@@ -159,14 +159,14 @@ def test_MainProcessing1():
     
     
     node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=3., background=False, node_conf=node_conf) #background = True
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
     
     
     print(node0.freqs)
     
     freq_band = 3
     
-    fig, ax = plt.subplots(nrows = 6, sharex=True, sharey=True)
+    fig, ax = plt.subplots(nrows = 6, sharex=True) #, sharey=True)
     ax[0].plot(in_buffer[:, 0], color = 'k')
     
     steps = ['pgc1', 'levels', 'hpaf', 'pgc2']
@@ -175,6 +175,7 @@ def test_MainProcessing1():
         online_arr = online_arrs[k]
         print(online_arr.shape)
         ax[i+1].plot(online_arr[:, freq_band], color = 'b')
+        ax[i+1].set_ylabel(k)
     #~ ax[0].plot(offline_arr[:, 0], color = 'g')
     
     out_buffer = online_arrs['signals']
@@ -189,7 +190,7 @@ def test_pgc1():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=3., background=False, node_conf=node_conf) #background = True
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
     
     n = node0.nb_freq_band
     in_buffer2 = np.tile(in_buffer,(1, node0.nb_freq_band))
@@ -215,6 +216,48 @@ def test_pgc1():
     plt.show()
     
     assert np.max(residual)<1e-5, 'CL_SosFilter online differt from offline'
+
+def test_levels():
+    assert nb_channel==1
+    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+    
+    node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
+    
+    freq_band = 2
+    
+    out_pgc1 = online_arrs['pgc1']
+    hilbert_env = np.abs(scipy.signal.hilbert(out_pgc1[:, freq_band], axis=0))
+    hilbert_level = 20*np.log10(hilbert_env) + node0.calibration
+    
+    online_levels= online_arrs['levels'][:, freq_band]*node0.level_step
+    online_env = 10**((online_levels-node0.calibration)/20.)
+    
+    residual = np.abs((online_levels.astype('float64')-hilbert_level.astype('float64'))/np.mean(np.abs(online_levels.astype('float64'))))
+    residual[:100] = 0
+    residual[-100:] = 0
+    print(np.max(residual))
+    
+    assert np.max(residual)<3e-2, 'levelfrom hilbert offline'
+    
+    fig, ax = plt.subplots(nrows = 2, sharex=True)
+    ax[0].plot(out_pgc1[:, freq_band], color = 'k', alpha=.8)
+    ax[0].plot(np.abs(out_pgc1[:, freq_band]), color = 'k', ls='--', alpha=.8)
+    ax[0].plot(hilbert_env, color = 'g', lw=2)
+    ax[0].plot(online_env, color = 'r', lw=2)
+    
+    ax[1].plot(online_levels, color='r')
+    ax[1].plot(hilbert_level, color='g')
+    
+    ax[1].set_ylabel('level dB')
+    
+    
+    
+    plt.show()
+
+
+        
     
 
 
@@ -227,6 +270,7 @@ if __name__ =='__main__':
     #~ test_DoNothingSlow()
     
     #~ test_MainProcessing1()
-    test_pgc1()
+    #~ test_pgc1()
+    test_levels()
 
 

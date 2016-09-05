@@ -82,7 +82,7 @@ __kernel void backward_filter(__global  float *input, __global  float *output, _
 
 __kernel void estimate_leveldb(__global  float *input, __global  float *levelindexes, __global float *previouslevel, __constant float *expdecays, long chunkcount) {
 
-    int chan = get_global_id(0); // f  = freq indice
+    int chan = get_global_id(0);
     
     int offset_buf = chan*forward_chunksize;
     int offset_level = chan*levelavgsize;
@@ -111,7 +111,6 @@ __kernel void estimate_leveldb(__global  float *input, __global  float *levelind
         if (avlevel>=levelmax) avlevel = levelmax-levelstep;
         if (avlevel<0.0f) avlevel = 0.0f;
         levelindexes[offset_buf+s] = avlevel/levelstep;
-
     }
 }
 
