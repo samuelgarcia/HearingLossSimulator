@@ -154,7 +154,7 @@ def test_CL_SosFilter():
 
 def test_MainProcessing1():
     #~ in_buffer = hls.moving_erb_noise(length)
-    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=100., f2=2000.,  ampl = .5)
+    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=100., f2=2000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     

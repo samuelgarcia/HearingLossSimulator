@@ -320,7 +320,7 @@ class MainProcessing(CL_BaseProcessingNode):
         self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
         # one decay per band (for testing)
         #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
-    
+
     
     def initlalize_cl(self):
         """
@@ -408,11 +408,20 @@ class MainProcessing(CL_BaseProcessingNode):
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
+        print()
+        print('pos', pos, nb_section)
+        print(global_size, local_size)
         event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
                                 self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
         event.wait()
         if self.debug_mode:
-            pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
+            
+            ev = pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
+            ev.wait()
+            print(chunk)
+            print(self.out_pgc1.shape)
+            print(self.out_pgc1)
+            
             self.outputs['pgc1'].send(self.out_pgc1.T, index=pos)
         
         
