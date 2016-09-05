@@ -80,7 +80,7 @@ __kernel void backward_filter(__global  float *input, __global  float *output, _
 
 
 
-__kernel void estimate_leveldb(__global  float *input, __global  float *levelindexes, __global float *previouslevel, __constant float *expdecays, long chunkcount) {
+__kernel void estimate_leveldb(__global  float *input, __global  float *outlevels, __global float *previouslevel, __constant float *expdecays, long chunkcount) {
 
     int chan = get_global_id(0);
     
@@ -105,18 +105,20 @@ __kernel void estimate_leveldb(__global  float *input, __global  float *levelind
         avlevel = 0.0;
         for (int k=0; k<levelavgsize; k++) avlevel += (previouslevel[offset_level+k]);
         avlevel /= levelavgsize;
+        //avlevel = prevlevel;
         
         //to dB and index dB
         avlevel = (20*log10(avlevel) + calibration);
         if (avlevel>=levelmax) avlevel = levelmax-levelstep;
         if (avlevel<0.0f) avlevel = 0.0f;
-        levelindexes[offset_buf+s] = avlevel/levelstep;
+        //outlevels[offset_buf+s] = avlevel/levelstep;
+        outlevels[offset_buf+s] = avlevel;
     }
 }
 
 
 
-__kernel void dynamic_sos_filter(__global  float *input, __global  float * coeff_indexes, __global  float *output, __global float *coefficients, __global float *zis, int nb_section) {
+__kernel void dynamic_sos_filter(__global  float *input, __global  float * levels, __global  float *output, __global float *coefficients, __global float *zis, int nb_section) {
 
     int chan = get_global_id(0); //channel indice
     int section = get_global_id(1); //section indice
@@ -144,13 +146,14 @@ __kernel void dynamic_sos_filter(__global  float *input, __global  float * coeff
         
         //filtering
         if (s2>=0 && (s2<forward_chunksize)){
-            filterindex = (int) coeff_indexes[offset_buf+s2];
+            //filterindex = (int) levels[offset_buf+s2];
+            filterindex = (int) (levels[offset_buf+s2]/levelstep);
+            
             offset_filt2 = offset_filt+filterindex*nb_section*6+section*6;
             w0 = out_channel[s2];
             w0 -= coefficients[offset_filt2+4] * w1;
             w0 -= coefficients[offset_filt2+5] * w2;
             out_channel[s2] = coefficients[offset_filt2+0] * w0 + coefficients[offset_filt2+1] * w1 +  coefficients[offset_filt2+2] * w2;
-            //out_channel[s2] = filterindex;
             w2 = w1; w1 =w0;
         }
     }

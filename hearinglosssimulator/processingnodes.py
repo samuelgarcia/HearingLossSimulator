@@ -350,6 +350,7 @@ class MainProcessing(CL_BaseProcessingNode):
         self.zi_pgc1 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
         smooth_sample = int(self.sample_rate*self.smooth_time)
+        smooth_sample = 1
         self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
         self.out_levels = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         
@@ -412,11 +413,6 @@ class MainProcessing(CL_BaseProcessingNode):
         event.wait()
         if self.debug_mode:
             ev = pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
-            #~ ev.wait()
-            #~ print(chunk)
-            #~ print(self.out_pgc1.shape)
-            #~ print(self.out_pgc1)
-            
             self.outputs['pgc1'].send(self.out_pgc1.T, index=pos)
         
         
