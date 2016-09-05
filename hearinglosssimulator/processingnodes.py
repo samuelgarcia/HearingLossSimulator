@@ -397,20 +397,31 @@ class MainProcessing(CL_BaseProcessingNode):
     
     def proccesing_func(self, pos, data):
         
-        chunk = data.T
-        if not chunk.flags['C_CONTIGUOUS']:
-            #~ print('copy because not C_CONTIGUOUS')
-            chunk = chunk.copy()
+        for chan in range(self.nb_channel):
+            self.in_pgc1[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :] = data[:, chan]
+            
+            #~ out_buffer[chan, :] = np.sum(out_pgc2_short[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
         
-        pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, chunk)
+        
+        
+        #~ chunk = data.T
+        #~ if not chunk.flags['C_CONTIGUOUS']:
+            #~ print('copy because not C_CONTIGUOUS')
+            #~ chunk = chunk.copy()
+            
+        #~ pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, chunk)
+        #~ self.in_pgc1[:] = chunk
+        pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, self.in_pgc1)
+
         
         #pgc1
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
-        print()
-        print('pos', pos, nb_section)
-        print(global_size, local_size)
+        #~ print()
+        #~ print('pos', pos, nb_section)
+        #~ print(chunk.shape)
+        #~ print(global_size, local_size)
         event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
                                 self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
         event.wait()
@@ -418,9 +429,9 @@ class MainProcessing(CL_BaseProcessingNode):
             
             ev = pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
             ev.wait()
-            print(chunk)
-            print(self.out_pgc1.shape)
-            print(self.out_pgc1)
+            #~ print(chunk)
+            #~ print(self.out_pgc1.shape)
+            #~ print(self.out_pgc1)
             
             self.outputs['pgc1'].send(self.out_pgc1.T, index=pos)
         

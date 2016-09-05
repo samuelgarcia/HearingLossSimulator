@@ -159,12 +159,12 @@ def test_MainProcessing1():
     
     
     node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=3., background=False, node_conf=node_conf) #background = True
     
     
     print(node0.freqs)
     
-    freq_band = 2
+    freq_band = 3
     
     fig, ax = plt.subplots(nrows = 6, sharex=True, sharey=True)
     ax[0].plot(in_buffer[:, 0], color = 'k')
@@ -182,7 +182,42 @@ def test_MainProcessing1():
     
     plt.show()
     
+
+def test_pgc1():
+    assert nb_channel==1
+    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
+    node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=3., background=False, node_conf=node_conf) #background = True
+    
+    n = node0.nb_freq_band
+    in_buffer2 = np.tile(in_buffer,(1, node0.nb_freq_band))
+    online_arr = online_arrs['pgc1']
+    offline_arr = in_buffer2.copy()
+    for i in range(n):
+        offline_arr[:, i] = scipy.signal.sosfilt(node0.coefficients_pgc[i,:,:], in_buffer2[:,i])
+    offline_arr = offline_arr[:online_arr.shape[0]]
+    
+    
+    residual = np.abs((online_arr.astype('float64')-offline_arr.astype('float64'))/np.mean(np.abs(offline_arr.astype('float64'))))
+    #~ print(np.max(residual))
+    
+    freq_band = 4
+    
+    fig, ax = plt.subplots(nrows = 2, sharex=True)
+    ax[0].plot(in_buffer2[:, freq_band], color = 'k')
+    ax[0].plot(online_arr[:, freq_band], color = 'b')
+    ax[0].plot(offline_arr[:, freq_band], color = 'g')
+    ax[1].plot(residual[:, freq_band], color = 'm')
+    for i in range(nloop):
+        ax[1].axvline(i*chunksize)
+    plt.show()
+    
+    assert np.max(residual)<1e-5, 'CL_SosFilter online differt from offline'
+    
+
+
     
     
     
@@ -191,6 +226,7 @@ if __name__ =='__main__':
     #~ test_Gain()
     #~ test_DoNothingSlow()
     
-    test_MainProcessing1()
+    #~ test_MainProcessing1()
+    test_pgc1()
 
 
