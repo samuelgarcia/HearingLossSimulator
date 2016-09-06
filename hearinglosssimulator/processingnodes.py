@@ -339,7 +339,6 @@ class MainProcessing(CL_BaseProcessingNode):
         assert self.dtype == np.dtype('float32')
         #~ assert self.coefficients.shape[0]==self.nb_channel, 'wrong coefficients.shape'
         
-        print(self.coefficients_hpaf.shape)
         
         self.out_hpaf_ringbuffer = pyacq.RingBuffer(shape=(self.backward_chunksize, self.total_channel), 
                                     dtype=self.dtype, double=True, fill=0., axisorder=(1,0))
@@ -358,7 +357,7 @@ class MainProcessing(CL_BaseProcessingNode):
         self.zi_hpaf = np.zeros((self.total_channel, self.coefficients_hpaf.shape[2], 2), dtype= self.dtype)
         
         self.in_pgc2 = np.zeros((self.total_channel, self.backward_chunksize), dtype= self.dtype)
-        self.out_pgc2 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
+        self.out_pgc2 = np.zeros((self.total_channel, self.backward_chunksize), dtype= self.dtype)
         self.zi_pgc2 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
         
@@ -436,15 +435,17 @@ class MainProcessing(CL_BaseProcessingNode):
                                 self.out_pgc1_cl, self.out_levels_cl, self.out_hpaf_cl, self.coefficients_hpaf_cl,
                                 self.zi_hpaf_cl, np.int32(nb_section))
         event.wait()
+        
+        
+        pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.out_hpaf_cl)
         if self.debug_mode:
-            pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.out_hpaf_cl)
             self.outputs['hpaf'].send(self.out_hpaf.T, index=pos)
         
         # get out_hpaf in host and put it in ring buffer
-        pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.out_hpaf_cl)
         self.out_hpaf_ringbuffer.new_chunk(self.out_hpaf.T, index=pos)
         # get the (longer) backward buffer
         in_pgc2 = self.out_hpaf_ringbuffer.get_data(pos-self.backward_chunksize, pos)
+        print(in_pgc2.shape, self.in_pgc2.shape)
         self.in_pgc2[:] = in_pgc2.T
         # and send it baack to device
         pyopencl.enqueue_copy(self.queue,  self.in_pgc2_cl, self.in_pgc2)
@@ -454,6 +455,8 @@ class MainProcessing(CL_BaseProcessingNode):
         
         if pos2<=0:
             return None, None
+        
+        # TODO put initiale values for zi_pgc2_cl
         
         # pgc2
         nb_section = self.coefficients_pgc.shape[1]
@@ -465,12 +468,7 @@ class MainProcessing(CL_BaseProcessingNode):
         pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
         out_pgc2_short = self.out_pgc2[:, :self.chunksize]
         
-        
-        #~ if pos2>0:
-        
         if self.debug_mode:
-            
-            
             self.outputs['pgc2'].send(out_pgc2_short.T, index=pos2)
         
         

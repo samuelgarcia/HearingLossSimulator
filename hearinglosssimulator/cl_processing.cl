@@ -124,7 +124,7 @@ __kernel void dynamic_sos_filter(__global  float *input, __global  float * level
     int section = get_global_id(1); //section indice
 
     int offset_buf = chan*forward_chunksize;
-    int offset_filt = chan*nb_level*nb_section*6; //offset channel
+    int offset_filt = chan*nb_level*nb_section*6;
     int offset_filt2;  //offset channel within section
     int offset_zi = chan*nb_section*2;
 

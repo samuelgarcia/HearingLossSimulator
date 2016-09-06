@@ -16,6 +16,10 @@ nb_channel = 1
 sample_rate =44100.
 chunksize = 512
 backward_chunksize = 1024
+#~ backward_chunksize = 640
+#~ backward_chunksize = 1536
+#~ backward_chunksize = 512
+
 nloop = 200
 
 length = int(chunksize*nloop)
@@ -158,13 +162,13 @@ def test_MainProcessing1():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     
-    node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node_conf = dict(nb_freq_band=10, level_step=1, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
     node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
     
     
     print(node0.freqs)
     
-    freq_band = 2
+    freq_band = 3
     
     fig, ax = plt.subplots(nrows = 6, sharex=True) #, sharey=True)
     ax[0].plot(in_buffer[:, 0], color = 'k')
@@ -215,7 +219,7 @@ def test_pgc1():
         ax[1].axvline(i*chunksize)
     plt.show()
     
-    assert np.max(residual)<1e-5, 'CL_SosFilter online differt from offline'
+    assert np.max(residual)<1e-5, 'pgc1 online differt from offline'
 
 def test_levels():
     assert nb_channel==1
@@ -258,17 +262,90 @@ def test_levels():
 
 
 def test_hpaf():
+    """
+    For testing dynamic filter we take coefficient with only one level so
+    it is dynamic with alwas the same coefficient
+    
+    """
     assert nb_channel==1
     #~ in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
     node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
     
     freq_band = 2
     
-    out_hpaf = online_arrs['hpaf']
+    online_pgc1 = online_arrs['pgc1']
+    online_hpaf = online_arrs['hpaf']
+
+    n = node0.nb_freq_band
+    offline_hpaf = online_pgc1.copy()
+    for i in range(n):
+        offline_hpaf[:, i] = scipy.signal.sosfilt(node0.coefficients_hpaf[i,0, :,:], online_pgc1[:,i])
+
+    residual = np.abs((online_hpaf.astype('float64')-offline_hpaf.astype('float64'))/np.mean(np.abs(offline_hpaf.astype('float64'))))
+    print(np.max(residual))
+    
+    freq_band = 4
+    
+    fig, ax = plt.subplots(nrows = 2, sharex=True)
+    ax[0].plot(online_pgc1[:, freq_band], color = 'b')
+    ax[0].plot(offline_hpaf[:, freq_band], color = 'g')
+    ax[0].plot(online_hpaf[:, freq_band], color = 'r', ls='--')
+    ax[1].plot(residual[:, freq_band], color = 'm')
+    for i in range(nloop):
+        ax[1].axvline(i*chunksize)
+    plt.show()
+    
+    assert np.max(residual)<2e-2, 'hpaf online differt from offline'
+
+
+def test_pgc2():
+    assert nb_channel==1
+    #~ in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    in_buffer = hls.moving_erb_noise(length)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+    
+    node_conf = dict(nb_freq_band=5, level_max=120, level_step=1, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node0, online_arrs = run_one_node(hls.MainProcessing, in_buffer, duration=2., background=False, node_conf=node_conf) #background = True
+    
+    freq_band = 0
+    
+    online_hpaf = online_arrs['hpaf']
+    online_pgc2 = online_arrs['pgc2']
+    offline_pgc2 = online_pgc2.copy()
+    
+    n = node0.nb_freq_band
+    for i in range(n):
+        print(scipy.signal.sosfilt(node0.coefficients_pgc[i, :,:], online_hpaf[::-1,i]).shape)
+        offline_pgc2[:, i] = scipy.signal.sosfilt(node0.coefficients_pgc[i, :,:], online_hpaf[::-1,i])[::-1]
+    
+    online_pgc2 = online_pgc2[:-backward_chunksize]
+    offline_pgc2 = offline_pgc2[:-backward_chunksize]
+    
+    residual = np.abs((online_pgc2.astype('float64')-offline_pgc2.astype('float64'))/np.mean(np.abs(offline_pgc2.astype('float64'))))
+    print(np.max(residual))
+    
+    freq_band = 4
+    
+    fig, ax = plt.subplots(nrows = 2, sharex=True)
+    #~ ax[0].plot(online_hpaf[:, freq_band], color = 'b')
+    ax[0].plot(offline_pgc2[:, freq_band], color = 'g')
+    ax[0].plot(online_pgc2[:, freq_band], color = 'r', ls='--')
+    ax[1].plot(residual[:, freq_band], color = 'm')
+    for i in range(nloop):
+        ax[1].axvline(i*chunksize)
+    plt.show()
+    
+    assert np.max(residual)<2e-2, 'hpaf online differt from offline'
+    
+
+# TODO make test for residual on very low freq
+    
+    
+
 
     
     
@@ -278,10 +355,11 @@ if __name__ =='__main__':
     #~ test_Gain()
     #~ test_DoNothingSlow()
     
-    test_MainProcessing1()
+    #~ test_MainProcessing1()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_hpaf()
+    test_pgc2()
     
 
 
