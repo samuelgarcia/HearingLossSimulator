@@ -146,7 +146,6 @@ class DoNothingSlow(BaseProcessingNode):
         self.sleep_time = sleep_time
     
     def proccesing_func(self, pos, data):
-        
         time.sleep(self.sleep_time)
         return pos, data
 

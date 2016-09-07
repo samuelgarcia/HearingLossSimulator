@@ -14,12 +14,13 @@ import matplotlib.pyplot as plt
 
 nb_channel = 1
 sample_rate =44100.
-chunksize = 512
+#~ chunksize = 512
+chunksize = 1024
 #~ backward_chunksize = 1024
-#~ backward_chunksize = 2048
+backward_chunksize = 2048
 #~ backward_chunksize = 1024
 #~ backward_chunksize = 640
-backward_chunksize = 1536
+#~ backward_chunksize = 1536
 #~ backward_chunksize = 512
 
 nloop = 200
@@ -247,9 +248,9 @@ def test_pgc2():
     
 if __name__ =='__main__':
     #~ test_DoNothing()
-    test_DoNothingSlow()
+    #~ test_DoNothingSlow()
     
-    #~ test_MainProcessing1()
+    test_MainProcessing1()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_hpaf()
