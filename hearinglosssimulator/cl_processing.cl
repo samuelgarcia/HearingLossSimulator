@@ -15,6 +15,8 @@
 __kernel void sos_filter(__global  float *input, __global  float *output, __constant  float *coefficients, 
             __global float *zi, int chunksize, int direction, int nb_section) {
     /*
+    This implement direct form II of lfilter
+    https://ccrma.stanford.edu/~jos/fp/Direct_Form_II.html
     input shape is (nb_channel, nb_section)
     output shape is (nb_channel, nb_section)
     coefficient shape is (nb_channel, nb_section, 6)

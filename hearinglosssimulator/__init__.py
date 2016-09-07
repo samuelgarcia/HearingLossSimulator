@@ -3,6 +3,4 @@ from .tools import *
 from .filterfactory import *
 from .soundgenerator import *
 from .processingnodes import *
-
-
-#~ from .offlinehelper import *
+from .offlinehelper import *
