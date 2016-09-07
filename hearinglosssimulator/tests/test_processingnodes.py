@@ -54,10 +54,11 @@ def test_MainProcessing1():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     
-    node_conf = dict(nb_freq_band=10, level_step=1, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    node_conf = dict(nb_freq_band=32, level_step=4, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
     node0, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
-    print(node0.freqs)
+    
+    print('nlevel', node0.levels.size, 'nb_freq_band', node0.nb_freq_band)
     
     freq_band = 3
     

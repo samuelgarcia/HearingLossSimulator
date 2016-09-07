@@ -265,7 +265,6 @@ class MainProcessing(CL_BaseProcessingNode):
         # Construct hpaf filters : pre compute for all sound levels for each freq
         self.levels = np.arange(0, self.level_max,self.level_step)
         nlevel = self.levels.size
-        print('nlevel', nlevel)
         
         # construct hpaf depending on loss
         self.coefficients_hpaf = np.zeros((self.nb_channel*self.nb_freq_band, len(self.levels), 4, 6), dtype = self.dtype)
