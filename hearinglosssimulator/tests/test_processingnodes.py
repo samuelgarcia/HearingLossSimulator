@@ -1,23 +1,23 @@
 import pytest
-import hearinglosssimulator as hls
-import numpy as np
-import time
-import pyacq
-import pyqtgraph as pg
-import helper
-import scipy.signal
-from pyqtgraph.Qt import QtCore, QtGui
 
+import numpy as np
+import scipy.signal
 import matplotlib.pyplot as plt
+
+import hearinglosssimulator as hls
+import helper
 
 #~ exit()
 
 nb_channel = 1
 sample_rate =44100.
+chunksize = 512
 #~ chunksize = 512
-chunksize = 1024
+#~ chunksize = 1024
+backward_chunksize = 1024 + 512
 #~ backward_chunksize = 1024
-backward_chunksize = 2048
+#~ backward_chunksize = 2048
+#~ backward_chunksize = 1200
 #~ backward_chunksize = 1024
 #~ backward_chunksize = 640
 #~ backward_chunksize = 1536
@@ -33,7 +33,7 @@ def test_DoNothing():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
 
     node_conf = {}
-    node0, online_arrs = hls.run_one_node_offline(hls.DoNothing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.DoNothing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     out_buffer = online_arrs['signals']
     helper.assert_arrays_equal(in_buffer, out_buffer)
 
@@ -42,7 +42,7 @@ def test_DoNothingSlow():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
 
     node_conf = {'sleep_time':chunksize/sample_rate*0.8}
-    node0, online_arrs = hls.run_one_node_offline(hls.DoNothingSlow, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.DoNothingSlow, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     out_buffer = online_arrs['signals']
     helper.assert_arrays_equal(in_buffer, out_buffer)
 
@@ -55,10 +55,10 @@ def test_MainProcessing1():
     
     
     node_conf = dict(nb_freq_band=32, level_step=4, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
     
-    print('nlevel', node0.levels.size, 'nb_freq_band', node0.nb_freq_band)
+    print('nlevel', node.levels.size, 'nb_freq_band', node.nb_freq_band)
     
     freq_band = 3
     
@@ -86,14 +86,14 @@ def test_pgc1():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
-    n = node0.nb_freq_band
-    in_buffer2 = np.tile(in_buffer,(1, node0.nb_freq_band))
+    n = node.nb_freq_band
+    in_buffer2 = np.tile(in_buffer,(1, node.nb_freq_band))
     online_arr = online_arrs['pgc1']
     offline_arr = in_buffer2.copy()
     for i in range(n):
-        offline_arr[:, i] = scipy.signal.sosfilt(node0.coefficients_pgc[i,:,:], in_buffer2[:,i])
+        offline_arr[:, i] = scipy.signal.sosfilt(node.coefficients_pgc[i,:,:], in_buffer2[:,i])
     offline_arr = offline_arr[:online_arr.shape[0]]
     
     
@@ -120,17 +120,17 @@ def test_levels():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
     freq_band = 2
     
     out_pgc1 = online_arrs['pgc1']
     hilbert_env = np.abs(scipy.signal.hilbert(out_pgc1[:, freq_band], axis=0))
-    hilbert_level = 20*np.log10(hilbert_env) + node0.calibration
+    hilbert_level = 20*np.log10(hilbert_env) + node.calibration
     
-    #~ online_levels= online_arrs['levels'][:, freq_band]*node0.level_step
+    #~ online_levels= online_arrs['levels'][:, freq_band]*node.level_step
     online_levels= online_arrs['levels'][:, freq_band]
-    online_env = 10**((online_levels-node0.calibration)/20.)
+    online_env = 10**((online_levels-node.calibration)/20.)
     
     residual = np.abs((online_levels.astype('float64')-hilbert_level.astype('float64'))/np.mean(np.abs(online_levels.astype('float64'))))
     residual[:100] = 0
@@ -165,17 +165,17 @@ def test_hpaf():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     node_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
     freq_band = 2
     
     online_pgc1 = online_arrs['pgc1']
     online_hpaf = online_arrs['hpaf']
 
-    n = node0.nb_freq_band
+    n = node.nb_freq_band
     offline_hpaf = online_pgc1.copy()
     for i in range(n):
-        offline_hpaf[:, i] = scipy.signal.sosfilt(node0.coefficients_hpaf[i,0, :,:], online_pgc1[:,i])
+        offline_hpaf[:, i] = scipy.signal.sosfilt(node.coefficients_hpaf[i,0, :,:], online_pgc1[:,i])
 
     residual = np.abs((online_hpaf.astype('float64')-offline_hpaf.astype('float64'))/np.mean(np.abs(offline_hpaf.astype('float64'))))
     print(np.max(residual))
@@ -204,7 +204,7 @@ def test_pgc2():
     node_conf = dict(nb_freq_band=32, level_max=120, level_step=1, debug_mode=True, 
                 low_freq = 60., hight_freq = 15000.,
                 chunksize=chunksize, backward_chunksize=backward_chunksize)
-    node0, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
     freq_band = 2
     
@@ -212,9 +212,9 @@ def test_pgc2():
     online_pgc2 = online_arrs['pgc2']
     offline_pgc2 = online_pgc2.copy()
     
-    n = node0.nb_freq_band
+    n = node.nb_freq_band
     for i in range(n):
-        offline_pgc2[:, i] = scipy.signal.sosfilt(node0.coefficients_pgc[i, :,:], online_hpaf[::-1,i])[::-1]
+        offline_pgc2[:, i] = scipy.signal.sosfilt(node.coefficients_pgc[i, :,:], online_hpaf[::-1,i])[::-1]
     
     online_pgc2 = online_pgc2[:-backward_chunksize]
     offline_pgc2 = offline_pgc2[:-backward_chunksize]
@@ -231,7 +231,7 @@ def test_pgc2():
     ax[0].plot(offline_pgc2[:, freq_band], color = 'g')
     ax[0].plot(online_pgc2[:, freq_band], color = 'r', ls='--')
     ax[1].plot(residual[:, freq_band], color = 'm')
-    ax[1].set_ylabel('residual for band {:0.2f}'.format(node0.freqs[freq_band]))
+    ax[1].set_ylabel('residual for band {:0.2f}'.format(node.freqs[freq_band]))
     for i in range(nloop):
         ax[1].axvline(i*chunksize)
     plt.show()

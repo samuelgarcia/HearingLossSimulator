@@ -66,7 +66,7 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
         # this must be overwirtten
         self.nb_channel = self.input.params['shape'][1]
         for k in ['sample_rate', 'dtype', 'shape']:
-            self.output.spec[k] = self.input.params[k]
+            self.outputs['signals'].spec[k] = self.input.params[k]
         
     
     def _initialize(self):
@@ -209,7 +209,7 @@ class MainProcessing(CL_BaseProcessingNode):
         
         
         for k in ['sample_rate', 'dtype', 'shape']:
-            self.output.spec[k] = self.input.params[k]
+            self.outputs['signals'].spec[k] = self.input.params[k]
         
         self.total_channel = self.nb_freq_band*self.nb_channel
         
@@ -456,9 +456,11 @@ class MainProcessing(CL_BaseProcessingNode):
         
         
         # pgc2
-        # TODO put initiale values for zi_pgc2_cl
-        #~ self.zi_pgc2[:] = 0
+        #TODO: do this in CL
         pyopencl.enqueue_copy(self.queue,  self.zi_pgc2_cl, self.zi_pgc2)
+        
+        #TODO: make backward chunksize multiple of chunksize and do not copy to RAM
+        # but make a ring of chunks
         
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)

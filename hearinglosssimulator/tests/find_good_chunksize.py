@@ -1,0 +1,115 @@
+"""
+chunksize and backward_chunksize variables have a strong impact
+on the quality of backward filtering.
+
+Normally the backward stage pgc2 shoudl be done offline for the whole buffer.
+For online it is done chunk by  chunksize.
+
+For low frequency this lead to bias the result because of side effect, so the chunksize and 
+backward_chunksize should be choosen carefully.
+
+The compute the error bewteen the offline and online backward filter for some
+backward_chunksize
+
+"""
+
+import hearinglosssimulator as hls
+import numpy as np
+import scipy.signal
+import matplotlib.pyplot as plt
+
+
+
+
+def plot_residual():
+
+    nb_channel = 1
+    sample_rate =44100.
+    chunksize = 256
+    #~ chunksize = 512
+    #~ chunksize = 1024
+    #~ chunksize = 
+    #~ nloop = 200
+    nloop = 200
+    
+    nb_freq_band=10
+    
+    length = int(chunksize*nloop)
+
+    in_buffer = hls.whitenoise(length, samplerate=sample_rate,)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+    
+    
+    side_chunksize = np.linspace(0,1024, 5).astype(int)
+    
+    #~ backward_chunksizes = [512,1024,1536,2048]
+    #~ backward_chunksizes = [1024,1536,2048]
+    #~ backward_chunksizes = np.linspace(1024,2048, 5).astype(int)
+    backward_chunksizes =  side_chunksize + chunksize
+    
+    
+    
+    all_mean_residuals = np.zeros((len(backward_chunksizes), nb_freq_band))
+    all_max_residuals = np.zeros((len(backward_chunksizes), nb_freq_band))
+    
+    for i, backward_chunksize in enumerate(backward_chunksizes):
+        print('backward_chunksize', backward_chunksize)
+        node_conf = dict(nb_freq_band=nb_freq_band, low_freq = 40., hight_freq = 500.,
+                    level_max=120, level_step=120, debug_mode=True, 
+                    chunksize=chunksize, backward_chunksize=backward_chunksize)
+        node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+    
+        #~ freq_band = 2
+    
+        online_hpaf = online_arrs['hpaf']
+        online_pgc2 = online_arrs['pgc2']
+        offline_pgc2 = online_pgc2.copy()
+    
+        n = node.nb_freq_band
+        for b in range(n):
+            offline_pgc2[:, b] = scipy.signal.sosfilt(node.coefficients_pgc[b, :,:], online_hpaf[::-1,b])[::-1]
+    
+        online_pgc2 = online_pgc2[:-backward_chunksize]
+        offline_pgc2 = offline_pgc2[:-backward_chunksize]
+    
+
+        residual = np.abs((online_pgc2.astype('float64')-offline_pgc2.astype('float64'))/np.mean(np.abs(offline_pgc2.astype('float64')), axis=0))
+        all_mean_residuals[i, :] = np.mean(residual, axis=0)
+        all_max_residuals[i, :] = np.max(residual, axis=0)
+        
+    
+    def my_imshow(m, ax):
+        im = ax.imshow(m, interpolation='nearest', 
+                    origin ='lower', aspect = 'auto', cmap = 'viridis')#, extent = extent, cmap=cmap)
+        im.set_clim(0,0.05)
+        ax.set_xticks(np.arange(node.freqs.size))
+        ax.set_xticklabels(['{:0.0f}'.format(f) for f in node.freqs])
+        ax.set_yticks(np.arange(len(backward_chunksizes)))
+        ax.set_yticklabels(['{}'.format(f) for f in side_chunksize])
+        ax.set_xlabel('freq')
+        ax.set_ylabel('side_chunksize')
+        
+        return im
+
+    print(all_max_residuals)
+    fig, axs = plt.subplots(nrows = 2, sharex=True)
+    im1 = my_imshow(all_mean_residuals, axs[0])
+    im2 = my_imshow(all_max_residuals, axs[1])
+    cax = fig.add_axes([0.92 , 0.05 , .02, 0.9 ] )
+    fig.colorbar(im1, ax=axs[0], cax=cax, orientation='vertical')
+    
+    plt.show()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+if __name__ =='__main__':
+    plot_residual()
+    
