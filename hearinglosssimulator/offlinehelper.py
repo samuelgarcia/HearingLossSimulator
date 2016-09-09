@@ -8,7 +8,7 @@ def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf
             buffersize_margin=0, time_stats=True):
     
     fake_output = pyacq.OutputStream()
-    fake_output.configure(sample_rate=sample_rate, dtype=dtype)
+    fake_output.configure(sample_rate=sample_rate, dtype=dtype, shape=(chunksize, in_buffer.shape[1]))
     
     buffer_size = in_buffer.shape[0]
     buffer_size2 = in_buffer.shape[0] + buffersize_margin

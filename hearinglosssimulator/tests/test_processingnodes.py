@@ -9,19 +9,16 @@ import helper
 
 #~ exit()
 
+#~ nb_channel = 2
 nb_channel = 1
+
 sample_rate =44100.
-chunksize = 512
+
+chunksize = 256
 #~ chunksize = 512
 #~ chunksize = 1024
-backward_chunksize = 1024 + 512
-#~ backward_chunksize = 1024
-#~ backward_chunksize = 2048
-#~ backward_chunksize = 1200
-#~ backward_chunksize = 1024
-#~ backward_chunksize = 640
-#~ backward_chunksize = 1536
-#~ backward_chunksize = 512
+#~ backward_chunksize = chunksize*3
+backward_chunksize = chunksize*5
 
 nloop = 200
 
@@ -52,9 +49,12 @@ def test_MainProcessing1():
     #~ in_buffer = hls.moving_erb_noise(length)
     in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=100., f2=2000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
+    #~ print(in_buffer.shape)
+    #~ exit()
     
-    
-    node_conf = dict(nb_freq_band=32, level_step=4, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel
+    node_conf = dict(nb_freq_band=32, level_step=4, loss_weigth=loss_weigth, 
+                debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
     node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
     
@@ -103,9 +103,9 @@ def test_pgc1():
     freq_band = 4
     
     fig, ax = plt.subplots(nrows = 2, sharex=True)
-    ax[0].plot(in_buffer2[:, freq_band], color = 'k')
-    ax[0].plot(online_arr[:, freq_band], color = 'b')
+    #~ ax[0].plot(in_buffer2[:, freq_band], color = 'k')
     ax[0].plot(offline_arr[:, freq_band], color = 'g')
+    ax[0].plot(online_arr[:, freq_band], color = 'r', ls='--')
     ax[1].plot(residual[:, freq_band], color = 'm')
     for i in range(nloop):
         ax[1].axvline(i*chunksize)
@@ -206,7 +206,7 @@ def test_pgc2():
                 chunksize=chunksize, backward_chunksize=backward_chunksize)
     node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
     
-    freq_band = 2
+    freq_band = 4
     
     online_hpaf = online_arrs['hpaf']
     online_pgc2 = online_arrs['pgc2']
@@ -224,7 +224,7 @@ def test_pgc2():
     print(np.max(residual, axis=0))
     print(np.max(residual))
     
-    freq_band = 4
+    #~ freq_band = 4
     
     fig, ax = plt.subplots(nrows = 2, sharex=True)
     #~ ax[0].plot(online_hpaf[:, freq_band], color = 'b')

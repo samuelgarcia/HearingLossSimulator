@@ -166,3 +166,25 @@ __kernel void dynamic_sos_filter(__global  float *input, __global  float * level
         for (int s=0; s<forward_chunksize;s++) output[offset_buf+s] = out_channel[s];
     }
 }
+
+
+__kernel void reset_zis(__global  float *zis){
+    int chan = get_group_id(0);
+    zis[2*chan] = 0;
+    zis[2*chan+1] = 0;    
+}
+
+
+
+__kernel void transpose_and_repeat_channel(__global float *inbuffer, __global float *output, int shape_in_1,  int nb_repeat){
+    
+    int pos = get_global_id(0);
+    int r = get_global_id(1);
+    int chan = get_global_id(2);
+    
+    int offset_out = (chan*nb_repeat*forward_chunksize) + r*forward_chunksize;
+    
+    output[offset_out+pos] = inbuffer[shape_in_1*pos+chan];
+
+}
+

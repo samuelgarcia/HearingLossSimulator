@@ -40,7 +40,8 @@ def plot_residual():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     
-    side_chunksize = np.linspace(0,1024, 5).astype(int)
+    #~ side_chunksize = np.linspace(0,1024, 5).astype(int)
+    side_chunksize = np.arange(7).astype(int) * chunksize
     
     #~ backward_chunksizes = [512,1024,1536,2048]
     #~ backward_chunksizes = [1024,1536,2048]
