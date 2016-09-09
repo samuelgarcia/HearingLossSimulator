@@ -236,12 +236,10 @@ def test_pgc2():
         ax[1].axvline(i*chunksize)
     plt.show()
     
+    # TODO make one values per band
     assert np.max(residual)<2e-2, 'hpaf online differt from offline'
     
 
-# TODO make test for residual on very low freq
-    
-    
 
 
     

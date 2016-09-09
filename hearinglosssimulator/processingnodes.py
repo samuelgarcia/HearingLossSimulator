@@ -331,11 +331,6 @@ class MainProcessing(CL_BaseProcessingNode):
         
         self.dtype = self.input.params['dtype']
         assert self.dtype == np.dtype('float32')
-        #~ assert self.coefficients.shape[0]==self.nb_channel, 'wrong coefficients.shape'
-        
-        
-        #~ self.out_hpaf_ringbuffer = pyacq.RingBuffer(shape=(self.backward_chunksize, self.total_channel), 
-                                    #~ dtype=self.dtype, double=True, fill=0., axisorder=(1,0))
         
         #host arrays
         self.in_channel = np.zeros((self.chunksize, self.nb_channel), dtype= self.dtype)
@@ -352,8 +347,6 @@ class MainProcessing(CL_BaseProcessingNode):
         self.out_hpaf = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_hpaf = np.zeros((self.total_channel, self.coefficients_hpaf.shape[2], 2), dtype= self.dtype)
         
-        #~ self.in_pgc2 = np.zeros((self.total_channel, self.backward_chunksize), dtype= self.dtype)
-        #~ self.out_pgc2 = np.zeros((self.total_channel, self.backward_chunksize), dtype= self.dtype)
         self.out_pgc2 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_pgc2 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         #set initial state to minimize initiale state
@@ -379,30 +372,23 @@ class MainProcessing(CL_BaseProcessingNode):
         self.previouslevel_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.previouslevel)
         self.out_levels_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_levels)
         
-        #~ self.out_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_hpaf)
         self.outs_hpaf_cl = [pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_hpaf) for _ in range(self.backward_ratio) ]
         
         self.zi_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_hpaf)
         self.coefficients_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.coefficients_hpaf)
         
-        #~ self.in_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.in_pgc2)
         self.out_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_pgc2)
         self.zi_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_pgc2)
         
         
         # compialtion
-        kernel = cl_code%dict(forward_chunksize=self.chunksize,
-                                            #~ backward_chunksize=self.backward_chunksize,
-                                            backward_chunksize=self.chunksize,
-                                            #~ max_chunksize=max(self.chunksize, self.backward_chunksize),
-                                            max_chunksize=self.chunksize,
-                                            nb_channel=self.total_channel, 
+        kernel = cl_code%dict(chunksize=self.chunksize,
                                             nb_level=len(self.levels),
                                             levelavgsize=smooth_sample,
                                             calibration=self.calibration,
                                             levelstep=self.level_step,
                                             levelmax=self.level_max,
-                                                            )
+                                            )
         prg = pyopencl.Program(self.ctx, kernel)
         self.opencl_prg = prg.build(options='-cl-mad-enable')
         
@@ -470,16 +456,6 @@ class MainProcessing(CL_BaseProcessingNode):
             pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.outs_hpaf_cl[ring_pos])
             self.outputs['hpaf'].send(self.out_hpaf.T, index=pos)
         
-        """
-        # get out_hpaf in host and put it in ring buffer
-        self.out_hpaf_ringbuffer.new_chunk(self.out_hpaf.T, index=pos)
-        # get the (longer) backward buffer
-        in_pgc2 = self.out_hpaf_ringbuffer.get_data(pos-self.backward_chunksize, pos)
-        self.in_pgc2[:] = in_pgc2.T
-        # and send it baack to device
-        pyopencl.enqueue_copy(self.queue,  self.in_pgc2_cl, self.in_pgc2)
-        """
-        
         pos2 = pos - self.backward_chunksize + self.chunksize
         #~ print('ici', 'pos', pos,  'pos2', pos2)
         #~ print('chunkcount', chunkcount, 'ring_pos', ring_pos)
@@ -491,33 +467,9 @@ class MainProcessing(CL_BaseProcessingNode):
         
         
         # pgc2
-        #TODO: do this in CL
-        #~ pyopencl.enqueue_copy(self.queue,  self.zi_pgc2_cl, self.zi_pgc2)
-
+        #~ pyopencl.enqueue_copy(self.queue,  self.zi_pgc2_cl, self.zi_pgc2) # this make this by copy
         event = self.opencl_prg.reset_zis(self.queue, (self.total_channel, ), (1, ), self.zi_pgc2_cl)
         event.wait()
-
-        
-        
-        """
-        #TODO: make backward chunksize multiple of chunksize and do not copy to RAM
-        # but make a ring of chunks
-        
-        nb_section = self.coefficients_pgc.shape[1]
-        global_size = (self.total_channel, nb_section,)
-        local_size = (1, nb_section, )
-        event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
-                                self.in_pgc2_cl, self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
-        event.wait()
-        pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
-        out_pgc2_short = self.out_pgc2[:, :self.chunksize]
-        
-        if pos2<self.chunksize:
-            out_pgc2_short = out_pgc2_short[:, :pos2]
-            out_buffer = np.empty((self.nb_channel, pos2), dtype=self.dtype)
-        else:
-            out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
-        """
 
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
@@ -536,14 +488,6 @@ class MainProcessing(CL_BaseProcessingNode):
             self.outputs['pgc2'].send(self.out_pgc2.T, index=pos2)
         
         out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
-        
-        
-        """
-        if self.debug_mode:
-            #~ print('pos2', pos2, self.out_pgc2.shape, out_pgc2_short.shape)
-            self.outputs['pgc2'].send(out_pgc2_short.T, index=pos2)
-        """
-        
         
         # sum by channel block
         
