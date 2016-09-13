@@ -17,8 +17,8 @@ sample_rate =44100.
 chunksize = 256
 #~ chunksize = 512
 #~ chunksize = 1024
-#~ backward_chunksize = chunksize*3
-backward_chunksize = chunksize*5
+backward_chunksize = chunksize*3
+#~ backward_chunksize = chunksize*5
 
 nloop = 200
 

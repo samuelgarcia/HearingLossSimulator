@@ -9,8 +9,8 @@ import hearinglosssimulator as hls
 import helper
 
 
-path = '/home/sgarcia/test_HLS/'
-#~ path = '/home/samuel/test_HLS/'
+#~ path = '/home/sgarcia/test_HLS/'
+path = '/home/samuel/test_HLS/'
 
 if not os.path.exists(path):
     os.mkdir(path)

@@ -8,31 +8,6 @@ import soundfile
 from .processingnodes import MainProcessing
 
 
-#~ def make_offline_node(nodeclass, in_buffer, node_conf={}):
-    #~ fake_output = pyacq.OutputStream()
-    #~ fake_output.configure(sample_rate=sample_rate, dtype=dtype, shape=(chunksize, in_buffer.shape[1]))
-    
-    #~ buffer_size = in_buffer.shape[0]
-    #~ buffer_size2 = in_buffer.shape[0] + buffersize_margin
-    
-    
-    #~ stream_spec = dict(protocol='tcp', interface='127.0.0.1', transfermode='sharedmem',
-                #~ dtype=dtype, buffer_size=buffer_size2, double=False, sample_rate=sample_rate)
-    #~ if out_mode=='full_buffer':
-        #~ stream_spec['buffer_size'] = buffer_size2
-    #~ elif out_mode=='yield_buffer':
-        #~ stream_spec['buffer_size'] = chunksize * 2
-    
-    #~ node = nodeclass(name='node_tested')
-    #~ node.configure(**node_conf)
-    #~ node.input.connect(fake_output)
-    #~ for out_name in node.outputs.keys():
-        #~ node.outputs[out_name].configure(**stream_spec)
-    #~ node.initialize()
-    #~ node.input.set_buffer(size=chunksize)
-
-    
-
 def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf={}, dtype='float32', 
             buffersize_margin=0, time_stats=True, out_mode='full_buffer'):
     
