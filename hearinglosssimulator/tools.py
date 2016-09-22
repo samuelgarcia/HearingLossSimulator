@@ -4,7 +4,7 @@ import os
 import tempfile
 
 import soundfile
-
+import pyaudio
 
 def sosfreqz(coeff,worN = 4096):
     # in scipy soon
@@ -27,6 +27,9 @@ def rms_level(sound):
     return rms_dB
 
 
+    
+    
+
 def play_with_vlc(sounds, sample_rate = 44100):
     dir = tempfile.gettempdir()+'/play_with_vlc/'
     if not os.path.exists(dir):
@@ -41,9 +44,9 @@ def play_with_vlc(sounds, sample_rate = 44100):
         soundfilename = dir+name+'.wav'
         print(sound_buffer.ndim)
         if sound_buffer.ndim==1:
-            nchannels = 1
+            nb_channel = 1
         else:
-            nchannels = sound_buffer.shape[1]
+            nb_channel = sound_buffer.shape[1]
         #~ print (sound_buffer.transpose().shape, np.asarray(sound_buffer.transpose()).ndim)
         sound_buffer = sound_buffer.astype('float32')
         #~ soundfile.write(soundfilename, sound_buffer.transpose(), int(sample_rate), subtype = 'FLOAT')
@@ -52,5 +55,30 @@ def play_with_vlc(sounds, sample_rate = 44100):
     
     #~ print ' '.join(soundfilenames)
     os.system('vlc '+' '.join(soundfilenames))
+
+
+
+def play_with_pyaudio(sound, sample_rate = 44100, output_device_index=None, chunksize=1024):
+    pa = pyaudio.PyAudio()
     
+    if output_device_index is None:
+        output_device_index = pa.get_default_output_device_info()['index']
+        print('output_device_index', output_device_index)
+    
+    if sound.ndim==1:
+        nb_channel = 1
+    else:
+        nb_channel = sound.shape[1]
+    
+    sound = sound.astype('float32')
+    print('nb_chennal', nb_channel)
+    audiostream = pa.open(rate=int(sample_rate), channels=int(nb_channel), format= pyaudio.paFloat32,
+                    input=False, output=True, input_device_index=None, output_device_index=output_device_index,
+                    frames_per_buffer=chunksize)
+    
+    nloop = sound.shape[0]//chunksize + 1
+    for i in range(nloop):
+        chunk = sound[i*chunksize:(i+1)*chunksize]
+        if chunk.size>0:
+            audiostream.write(bytes(chunk))
     

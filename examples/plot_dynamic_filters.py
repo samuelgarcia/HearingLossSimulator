@@ -13,10 +13,12 @@ sample_rate = 44100.
 
 params = dict(
         #~ sample_rate,
-        nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
-        tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
+        nb_freq_band=8, low_freq = 100., hight_freq = 15000.,
+        tau_level = 0.005, smooth_time = 0.0005, level_step =4., level_max = 120.,
         calibration =  93.979400086720375,
-        loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel,
+        #~ loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel,
+        loss_weigth = [ [(50,0.), (100., -35), (15000., -35.), (25000,0.),]]*nb_channel,
+        
         chunksize=512, backward_chunksize=1024,
     )
 
@@ -41,8 +43,7 @@ fig2, ax2 = plt.subplots(nrows = 1, sharex = True)
 fig3, ax3 = plt.subplots(nrows = 1, sharex = True)
 
 for f, freq in enumerate(node.freqs):
-    gain_max1 = [ ]
-    gain_max2 = [ ]    
+    gain_by_level = [ ]
     for l, level in enumerate(node.levels):
         hpaffilter = node.coefficients_hpaf[f,l,:,:]
         #lpaffilter = node.lpaffilters[f,l,:,:]
@@ -56,14 +57,12 @@ for f, freq in enumerate(node.freqs):
         w, h = hls.sosfreqz(filter1, worN = 4096*4,)
         
         gain = np.max(20*np.log10(np.abs(h)))
-        gain_max1.append(gain)
+        gain_by_level.append(gain)
         ax3.plot(w/np.pi*(sample_rate/2.), 20*np.log10(h)-gain, color = levels_colors[l])
         
-    gain_max1 = np.array(gain_max1)#+8.41
-    print('correction', gain_max1[-1], freq)
-    #gain_max1 -= gain_max1[-1]
+    gain_by_level = np.array(gain_by_level)
     
-    ax2.plot(node.levels, gain_max1+node.levels, label = '{}Hz'.format(freq), color = freq_colors[f])
+    ax2.plot(node.levels, gain_by_level+node.levels, label = '{}Hz'.format(freq), color = freq_colors[f])
     ax2.plot(node.levels, node.levels, ls = '--', color = 'm')
 
     hls.plot_filter(node.coefficients_pgc[f,:,:], ax1s[1], sample_rate, label = 'pGC', color = 'k')

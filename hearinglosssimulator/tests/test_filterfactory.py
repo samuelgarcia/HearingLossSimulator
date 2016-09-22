@@ -8,9 +8,9 @@ def apply_and_plot(func, *args, **kargs):
     from matplotlib import pyplot
     #~ freqs = [  200., 1000.,  5000. ]
     freqs = [  200.,  758.18944907,  2042.9450242,   5000.        ]
-    samplerate = 44100.
+    sample_rate = 44100.
     
-    coeff = func(freqs, samplerate,*args, **kargs)
+    coeff = func(freqs, sample_rate,*args, **kargs)
     
     fig, ax = pyplot.subplots()
     for f, freq in enumerate(freqs):

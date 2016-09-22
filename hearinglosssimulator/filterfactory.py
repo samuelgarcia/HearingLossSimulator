@@ -17,9 +17,9 @@ import numpy as np
 from numpy import exp, cos, sin, pi, sqrt #abs, sum
 
 
-def gammatone(freqs, samplerate, b=1.019, erb_order=1, ear_Q=9.26449, min_bw=24.7,):
+def gammatone(freqs, sample_rate, b=1.019, erb_order=1, ear_Q=9.26449, min_bw=24.7,):
     cf = freqs = np.asarray(freqs)
-    T = 1./samplerate
+    T = 1./sample_rate
     
     erb = ((cf/ear_Q)**erb_order + min_bw**erb_order)**(1/erb_order)
     #~ print erb
@@ -52,18 +52,18 @@ def gammatone(freqs, samplerate, b=1.019, erb_order=1, ear_Q=9.26449, min_bw=24.
     return coeff
     
 
-def asymmetric_compensation_coeffs(freqs, samplerate,b,c,p0,p1,p2,p3,p4, ncascade=4):
+def asymmetric_compensation_coeffs(freqs, sample_rate,b,c,p0,p1,p2,p3,p4, ncascade=4):
     freqs = np.asarray(freqs)
     ERBw=24.7*(4.37e-3*freqs+1.)
     coeff = np.zeros((len(freqs), ncascade, 6))
     for k in range(ncascade):
-        r=exp(-p1*(p0/p4)**(k)*2*pi*b*ERBw/samplerate) #k instead of k-1 because range 0 N-1
+        r=exp(-p1*(p0/p4)**(k)*2*pi*b*ERBw/sample_rate) #k instead of k-1 because range 0 N-1
         Dfr=(p0*p4)**(k)*p2*c*b*ERBw
-        phi=2*pi*np.maximum((freqs+Dfr), 0)/samplerate
-        psy=2*pi*np.maximum((freqs-Dfr), 0)/samplerate
+        phi=2*pi*np.maximum((freqs+Dfr), 0)/sample_rate
+        psy=2*pi*np.maximum((freqs-Dfr), 0)/sample_rate
         ap=np.vstack((np.ones(r.shape),-2*r*cos(phi), r**2)).T
         bz=np.vstack((np.ones(r.shape),-2*r*cos(psy), r**2)).T
-        vwr=exp(1j*2*pi*freqs/samplerate)
+        vwr=exp(1j*2*pi*freqs/sample_rate)
         vwrs=np.vstack((np.ones(vwr.shape), vwr, vwr**2)).T
         ##normilization stuff
         nrm=abs(np.sum(vwrs*ap, 1)/np.sum(vwrs*bz, 1))
@@ -76,17 +76,17 @@ def asymmetric_compensation_coeffs(freqs, samplerate,b,c,p0,p1,p2,p3,p4, ncascad
 
 
 
-def loggammachirp(freqs, samplerate, b=1.019, c=1, ncascade_asym_comp=4):
+def loggammachirp(freqs, sample_rate, b=1.019, c=1, ncascade_asym_comp=4):
     """
     A gammatone and lpfilter in cascade.
     """
-    coeff0 = gammatone(freqs, samplerate,b)
+    coeff0 = gammatone(freqs, sample_rate,b)
     p0=2
     p1=1.7818*(1-0.0791*b)*(1-0.1655*abs(c))
     p2=0.5689*(1-0.1620*b)*(1-0.0857*abs(c))
     p3=0.2523*(1-0.0244*b)*(1+0.0574*abs(c))
     p4=1.0724
-    coeff1 = asymmetric_compensation_coeffs(freqs, samplerate, b, c, p0, p1, p2, p3, p4, ncascade = ncascade_asym_comp)
+    coeff1 = asymmetric_compensation_coeffs(freqs, sample_rate, b, c, p0, p1, p2, p3, p4, ncascade = ncascade_asym_comp)
     coeff = np.concatenate([ coeff0, coeff1], axis = 1)
 
     return coeff

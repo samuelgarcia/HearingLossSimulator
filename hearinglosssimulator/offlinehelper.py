@@ -98,6 +98,12 @@ def compute_numpy(sound, sample_rate, **params):
     """
     assert isinstance(sound, np.ndarray)
     
+    if sound.ndim==1:
+        sound = sound[:, None]
+        onedim = True
+    else:
+        onedim = False
+    
     sound = sound.astype('float32')
     
     chunksize = params['chunksize']
@@ -106,6 +112,9 @@ def compute_numpy(sound, sample_rate, **params):
     node, out_buffers = run_one_node_offline(MainProcessing, sound, chunksize, sample_rate, node_conf=params, dtype='float32', 
             buffersize_margin=backward_chunksize, time_stats=False, out_mode='full_buffer')
     out_sound = out_buffers['signals']
+    
+    if onedim:
+        out_sound = out_sound[:, 0]
     
     return out_sound
 

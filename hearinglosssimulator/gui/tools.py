@@ -1,9 +1,13 @@
 import PyQt5 # this force pyqtgraph to deal with Qt5
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
+import numpy as np
 import pyaudio
+import time
 
-class FeqGainDuration(QtGui.QWidget):
+import hearinglosssimulator as hls
+
+class FreqGainDuration(QtGui.QWidget):
     def __init__(self, parent = None):
         QtGui.QWidget.__init__(self, parent)
         mainlayout  =QtGui.QHBoxLayout()
@@ -35,20 +39,65 @@ class FeqGainDuration(QtGui.QWidget):
                         'freq' : float(self.spinbox_freq.value()),
                     }
 
+def test_FreqGainDuration():
+    app = pg.mkQApp()
+    win = FreqGainDuration()
+    win.show()
+    app.exec_()    
 
-def play_sinus(freq, gain, duration, output_device_index):
+def play_sinus(freq, dbgain, duration, output_device_index, nb_channel=2):
     pa = pyaudio.PyAudio()
     dev =  pa.get_device_info_by_index(output_device_index)
-    samplerate =  dev['defaultSampleRate']
-    nchannel = dev['maxOutputChannels']
-    assert nchannel==2
-    length = int(samplerate * duration)+1
-    sound = hl.several_sinus(length, freqs = [freq],  samplerate = samplerate, ampl = 1.)
-    sound = np.array([sound] * nchannel)
-    steps = [ 
-                    hl.InputNumpy('in', sound),
-                    hl.GainProcessing('gain', ['in'], nchannel, gain),
-                    hl.OutputAudioDevice('out', ['gain'], nchannel, output_device_index = output_device_index),
-                    ]
-    processor = hl.ProcessChainEngine(chunksize, winsize, samplerate, steps) 
-    processor.run()
+    sample_rate =  dev['defaultSampleRate']
+    assert nb_channel<dev['maxOutputChannels']
+    
+    length = int(sample_rate * duration)+1
+    sound = hls.several_sinus(length, freqs=[freq], sample_rate=sample_rate, ampl = 1.)
+    sound = np.tile(sound[:, None],(1, nb_channel))
+
+    gain = 10**(dbgain/20.)
+    sound *= gain
+    
+    hls.play_with_pyaudio(sound, sample_rate=44100., output_device_index=output_device_index, chunksize=1024)
+    
+
+def test_play_sinus():
+    play_sinus(1000., -30, 4., 10)
+
+
+def play_input_to_output(duration, input_device_index, output_device_index,  sample_rate=44100, chunksize=1024, nb_channel=2):
+    pa = pyaudio.PyAudio()
+    
+    def callback(in_data, frame_count, time_info, status):
+        return (in_data, pyaudio.paContinue)
+    
+    audiostream = pa.open(rate=int(sample_rate), channels=int(nb_channel), format= pyaudio.paFloat32,
+                    input=True, output=True, input_device_index=input_device_index, output_device_index=output_device_index,
+                    frames_per_buffer=chunksize, stream_callback=callback, start=False)
+    
+    
+    audiostream.start_stream()
+    
+    t_start = time.perf_counter()
+    while (time.perf_counter()-t_start)<duration:
+        time.sleep(0.01)
+
+    audiostream.stop_stream()
+    audiostream.close()
+
+    pa.terminate()
+    
+    
+    
+def test_play_input_to_output():
+    play_input_to_output(4, 10,10)
+    
+
+
+
+if __name__ == '__main__':
+    #~ test_FreqGainDuration()
+    #~ test_play_sinus()
+    test_play_input_to_output()
+
+

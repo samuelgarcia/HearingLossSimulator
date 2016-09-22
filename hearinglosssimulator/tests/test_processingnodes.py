@@ -47,7 +47,7 @@ def test_DoNothingSlow():
 
 def test_MainProcessing1():
     #~ in_buffer = hls.moving_erb_noise(length)
-    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=100., f2=2000.,  ampl = .8)
+    in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=100., f2=2000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     #~ print(in_buffer.shape)
     #~ exit()
@@ -82,7 +82,7 @@ def test_MainProcessing1():
 
 def test_pgc1():
     assert nb_channel==1
-    in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     node_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
@@ -115,7 +115,7 @@ def test_pgc1():
 
 def test_levels():
     assert nb_channel==1
-    #~ in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    #~ in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
@@ -160,7 +160,7 @@ def test_hpaf():
     
     """
     assert nb_channel==1
-    #~ in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    #~ in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
@@ -196,9 +196,9 @@ def test_hpaf():
 
 def test_pgc2():
     assert nb_channel==1
-    #~ in_buffer = hls.moving_sinus(length, samplerate=sample_rate, speed = .5,  f1=50., f2=2000.,  ampl = .8)
-    #~ in_buffer = hls.moving_erb_noise(length, samplerate=sample_rate,)
-    in_buffer = hls.whitenoise(length, samplerate=sample_rate,)
+    #~ in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=50., f2=2000.,  ampl = .8)
+    #~ in_buffer = hls.moving_erb_noise(length, sample_rate=sample_rate,)
+    in_buffer = hls.whitenoise(length, sample_rate=sample_rate,)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     node_conf = dict(nb_freq_band=32, level_max=120, level_step=1, debug_mode=True, 
