@@ -67,6 +67,7 @@ class Calibration(QtGui.QWidget):
 
     def play_sinus(self):
         p = self.freqgainduration.get()
+        print('ici',  self.output_device_index)
         play_sinus(p['freq'], p['gain'], p['duration'], self.output_device_index)
     
     def play_input_to_output(self):

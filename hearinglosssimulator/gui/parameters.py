@@ -120,7 +120,8 @@ class HearingLossParameter(QtGui.QWidget):
         for i, ear in enumerate(ears):
             eq = OneEq()
             self.eqs.append(eq)
-            mainlayout.addWidget(QtGui.QLabel(u'<h1><b>{}</b>'.format(ear)))
+            #~ mainlayout.addWidget(QtGui.QLabel(u'<h1><b>{}</b>'.format(ear)))
+            mainlayout.addWidget(QtGui.QLabel(u'{}'.format(ear)))
             mainlayout.addWidget(eq)
             eq.valueChanged.connect(self.refresh_curves)
             eq.valueChanged.connect(self.valueChanged.emit)

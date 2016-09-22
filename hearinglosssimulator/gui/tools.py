@@ -49,7 +49,7 @@ def play_sinus(freq, dbgain, duration, output_device_index, nb_channel=2):
     pa = pyaudio.PyAudio()
     dev =  pa.get_device_info_by_index(output_device_index)
     sample_rate =  dev['defaultSampleRate']
-    assert nb_channel<dev['maxOutputChannels']
+    assert nb_channel<=dev['maxOutputChannels']
     
     length = int(sample_rate * duration)+1
     sound = hls.several_sinus(length, freqs=[freq], sample_rate=sample_rate, ampl = 1.)
