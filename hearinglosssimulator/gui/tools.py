@@ -14,20 +14,23 @@ class FreqGainDuration(QtGui.QWidget):
         self.setLayout(mainlayout)
 
         mainlayout.addWidget(QtGui.QLabel(u'Gain (dBFs)'))
-        self.spinbox_gain = QtGui.QSpinBox(maximum = 0, minimum = -100, value = -15.)
+        self.spinbox_gain = QtGui.QSpinBox(maximum = 0, minimum = -100)
         mainlayout.addWidget(self.spinbox_gain)
         mainlayout.addStretch()
         
         mainlayout.addWidget(QtGui.QLabel(u'Duration (s)'))
-        self.spinbox_duration = QtGui.QSpinBox(maximum = 15, minimum = .5, value = 2.)
+        self.spinbox_duration = QtGui.QSpinBox(maximum = 15, minimum = .5)
         mainlayout.addWidget(self.spinbox_duration)
         mainlayout.addStretch()
 
         mainlayout.addWidget(QtGui.QLabel(u'Freq (Hz)'))
-        self.spinbox_freq = QtGui.QSpinBox(maximum = 20000, minimum = 1, value = 1000.)
+        self.spinbox_freq = QtGui.QSpinBox(maximum = 20000, minimum = 1)
         mainlayout.addWidget(self.spinbox_freq)
+        
+        self.set()
 
     def set(self, gain = -15, duration = 2., freq = 1000.):
+        pass
         self.spinbox_gain.setValue(gain)
         self.spinbox_duration.setValue(duration)
         self.spinbox_freq.setValue(freq)
@@ -96,8 +99,8 @@ def test_play_input_to_output():
 
 
 if __name__ == '__main__':
-    #~ test_FreqGainDuration()
+    test_FreqGainDuration()
     #~ test_play_sinus()
-    test_play_input_to_output()
+    #~ test_play_input_to_output()
 
 
