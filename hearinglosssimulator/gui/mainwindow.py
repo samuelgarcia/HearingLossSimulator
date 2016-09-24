@@ -161,6 +161,7 @@ class MainWindow(QtGui.QWidget):
         
         for k , element in self.configuration_elements.items():
             if k in all_config:
+                #~ print(k, all_config[k])
                 element.set_configuration(**all_config[k])
 
     def on_hearingloss_changed(self):

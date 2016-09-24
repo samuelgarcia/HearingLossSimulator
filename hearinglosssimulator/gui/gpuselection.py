@@ -24,12 +24,17 @@ class GpuDeviceSelection(QtGui.QWidget):
         self.combo_platform.currentIndexChanged.connect(self.resfresh_device_list)
     
     def set_configuration(self, platform_index = 0, device_index = 0):
-        try: self.combo_platform.setCurrentIndex(platform_index)
-        except: pass
-        self.resfresh_platform_list()
-        try: self.combo_dev.setCurrentIndex(device_index)
-        except: pass
-
+        self.combo_platform.currentIndexChanged.disconnect(self.resfresh_device_list)
+        try: 
+            self.combo_platform.setCurrentIndex(platform_index)
+        except: 
+            pass
+        self.resfresh_device_list(platform_index)
+        try:
+            self.combo_dev.setCurrentIndex(device_index)
+        except: 
+            pass
+        self.combo_platform.currentIndexChanged.connect(self.resfresh_device_list)
     
     def get_configuration(self):
         config = {'platform_index': int(self.combo_platform.currentIndex()),
