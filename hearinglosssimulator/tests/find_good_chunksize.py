@@ -36,7 +36,7 @@ def plot_residual():
     
     length = int(chunksize*nloop)
 
-    in_buffer = hls.whitenoise(length, samplerate=sample_rate,)
+    in_buffer = hls.whitenoise(length, sample_rate=sample_rate,)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     

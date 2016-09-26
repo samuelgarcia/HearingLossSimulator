@@ -6,13 +6,18 @@ import json
 
 from collections import OrderedDict
 
+import pyacq
+
+import hearinglosssimulator as hls
 from hearinglosssimulator.gui.parameters import HearingLossParameter
 from hearinglosssimulator.gui.calibration import Calibration
 from hearinglosssimulator.gui.audioselection import AudioDeviceSelection
 from hearinglosssimulator.gui.gpuselection import GpuDeviceSelection
 
 
-HearingLossParameter
+
+
+
 
 class MainWindow(QtGui.QWidget):
     def __init__(self, parent = None):
@@ -67,10 +72,17 @@ class MainWindow(QtGui.QWidget):
         self.but_compute_filters = QtGui.QPushButton(u'Computed filters')
         self.but_compute_filters.clicked.connect(self.compute_filters)
         mainlayout.addWidget(self.but_compute_filters)
-        self.but_start_stop = QtGui.QPushButton(u'Start/Stop simulator on inputs', checkable = True)
+        
+        self.but_start_stop = QtGui.QPushButton(u'Start/Stop playback', checkable = True)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
         self.but_start_stop.setEnabled(False)
         mainlayout.addWidget(self.but_start_stop)
+
+        self.but_enable_bypass = QtGui.QPushButton(u'Enable/bypass simulator', checkable = True)
+        self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
+        self.but_enable_bypass.setEnabled(False)
+        mainlayout.addWidget(self.but_enable_bypass)
+        
         mainlayout.addStretch()
 
         mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Setup loss on each ear/Stop</b>'))
@@ -89,9 +101,11 @@ class MainWindow(QtGui.QWidget):
         self.load_configuration()
         self.change_audio_device()
 
-        self.hearingLossParameter.valueChanged.connect(self.on_hearingloss_changed)
-        self.able_to_start = False
-        self.thread =None
+        #~ self.hearingLossParameter.valueChanged.connect(self.on_hearingloss_changed)
+        #~ self.able_to_start = False
+        
+        self.pyacq_manager = None
+
 
 
     def warn(self, title, text):
@@ -165,49 +179,101 @@ class MainWindow(QtGui.QWidget):
                 element.set_configuration(**all_config[k])
 
     def on_hearingloss_changed(self):
-        self.able_to_start = False
-        if self.thread is None or not self.thread.isRunning(): 
-            self.but_start_stop.setEnabled(self.able_to_start)
+        pass
+    
+    
+    def params_for_node(self):
+        chunksize = 512
+        backward_chunksize = chunksize * 3
+        
+        calibration = self.calibrationWidget.get_configuration()['spl_calibration_at_zero_dbfs']
+        loss_weigth_dict = self.hearingLossParameter.get_configuration()['loss_weigth']
+        loss_weigth = [[(e['freq'], e['db_loss']) for e in l ] for l in loss_weigth_dict ]
+
+        
+        params = dict(
+                nb_freq_band=32, low_freq = 80., hight_freq = 20000.,
+                tau_level = 0.005, level_step =10., level_max = 120., #smooth_time = 0.0005, 
+                calibration =  calibration,
+                loss_weigth = loss_weigth,
+                chunksize=chunksize, backward_chunksize=backward_chunksize,
+                gpu_platform_index = self.gpu_platform_index,
+                gpu_device_index = self.gpu_device_index,
+                debug_mode=False,
+                bypass=self.but_enable_bypass.isChecked(),
+            )
+        return params
+
+        
+    def setup_pyacq_nodes(self):
+        if self.pyacq_manager is not None:
+            self.pyacq_manager.close()
+        
+        nb_channel = 2
+        sample_rate = 44100.
+        params = self.params_for_node()
+        
+        stream_spec = dict(protocol='tcp', interface='127.0.0.1', transfertmode='plaindata')
+        
+        background = True
+        #~ background = False
+        if background:
+            self.pyacq_manager = pyacq.create_manager()
+            ng0 = self.pyacq_manager.create_nodegroup()  # process for device
+            ng1 = self.pyacq_manager.create_nodegroup()  # process for processing
+            self.audio_device = ng0.create_node('PyAudio')
+            ng1.register_node_type_from_module('hearinglosssimulator', 'MainProcessing')
+            self.node = ng1.create_node('MainProcessing')
+        else:
+            self.audio_device = pyacq.PyAudio()
+            self.node = hls.MainProcessing()
+        
+        self.audio_device.configure(nb_channel=nb_channel, sample_rate=sample_rate,
+                      input_device_index=self.input_device_index,
+                      output_device_index=self.output_device_index,
+                      format='float32', chunksize=params['chunksize'])
+        self.audio_device.output.configure(**stream_spec)
+        self.audio_device.initialize()
+        
+        self.node.configure(**params)
+        
+        self.node.input.connect(self.audio_device.output)
+        self.node.outputs['signals'].configure(**stream_spec)
+        if background:
+            # this do compute filter take very long
+            self.node.initialize(_timeout=60.)
+        else:
+            self.node.initialize()
+
+        self.audio_device.input.connect(self.node.outputs['signals'])
+        
+        self.but_start_stop.setEnabled(True)
+        self.but_enable_bypass.setEnabled(True)
+    
+    def running(self):
+        if not hasattr(self, 'audio_device'):
+            return False
+        
+        return self.audio_device.running()
     
     def compute_filters(self):
-        pass
-        # TODO
-        
-        #~ if self.thread is not None and self.thread.isRunning(): 
-            #~ return
-        
-        #~ loss_weigth_dict = self.hearingLossParameter.get_configuration()['loss_weigth']
-        #~ loss_weigth = [[(e['freq'], e['db_loss']) for e in l ] for l in loss_weigth_dict ]
-        #~ loss_params = dict(
-                        #~ nfreq = 32,
-                        #~ low_freq = 80.,
-                        #~ hight_freq = 15000.,
-                        #~ tau1 = 0.005, #s. decay for level estimation
-                        #~ smooth_time = 0.0005, #s.
-                        #~ levelstep =.1, #dB
-                        #~ levelmax = 120., #dB
-                        #~ calibration =  self.calibrationWidget.get_configuration()['spl_calibration_at_zero_dbfs'],
-                        #~ loss_weigth = loss_weigth,
-                        #~ )
-
-        #~ self.thread =ThreadHearingLoss(
-                                                            #~ input_device_index = self.input_device_index,
-                                                            #~ output_device_index = self.output_device_index,
-                                                            #~ gpu_platform_index = self.gpu_platform_index,
-                                                            #~ gpu_device_index = self.gpu_device_index,
-                                                            #~ **loss_params
-                                                            #~ )
-        self.able_to_start = True
-        self.but_start_stop.setEnabled(self.able_to_start)
+        if not hasattr(self, 'audio_device'):
+            self.setup_pyacq_nodes()
+        else:
+            params = self.params_for_node()
+            self.node.online_configure(**params, _timeout=60.)
     
     def start_stop_audioloop(self, checked):
         if checked:
-            #~ self.thread.start()
-            pass
+            self.audio_device.start()
+            self.node.start()
         else:
-            #~ self.thread.stop()
-            #~ self.thread.wait()
-            self.but_start_stop.setEnabled(self.able_to_start)
+            self.audio_device.stop()
+            self.node.stop()
+    
+    
+    def enable_bypass_simulator(self, checked):
+        self.node.set_bypass(checked)
 
 
         

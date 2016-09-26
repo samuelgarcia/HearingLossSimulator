@@ -39,8 +39,8 @@ ng1 = man.create_nodegroup()  # process for processing
 
 dev = ng0.create_node('PyAudio')
 dev.configure(nb_channel=nb_channel, sample_rate=sample_rate,
-              input_device_index=0,
-              output_device_index=0,
+              input_device_index=10,
+              output_device_index=10,
               format='float32', chunksize=chunksize)
 dev.output.configure(**stream_spec)
 dev.initialize()
