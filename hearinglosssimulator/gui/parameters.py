@@ -109,6 +109,9 @@ class HearingLossParameter(QtGui.QWidget):
         but = QtGui.QPushButton(u'Set flat')
         h.addWidget(but)
         but.clicked.connect(self.set_flat)
+        but = QtGui.QPushButton(u'Copy L>R')
+        h.addWidget(but)
+        but.clicked.connect(self.copy_l_to_r)
         but = QtGui.QPushButton(u'Load')
         h.addWidget(but)
         but.clicked.connect(self.load)
@@ -116,20 +119,27 @@ class HearingLossParameter(QtGui.QWidget):
         h.addWidget(but)
         but.clicked.connect(self.save)
         
+
+        self.tab = QtGui.QTabWidget()
+        mainlayout.addWidget(self.tab)
+        
         ears = ('left', 'right')
         self.eqs =[ ]
         for i, ear in enumerate(ears):
             eq = OneEq()
             self.eqs.append(eq)
             #~ mainlayout.addWidget(QtGui.QLabel(u'<h1><b>{}</b>'.format(ear)))
-            mainlayout.addWidget(QtGui.QLabel(u'{}'.format(ear)))
-            mainlayout.addWidget(eq)
+            #~ mainlayout.addWidget(QtGui.QLabel(u'{}'.format(ear)))
+            #~ mainlayout.addWidget(eq)
+            self.tab.addTab(eq, ear)
+            
             eq.valueChanged.connect(self.refresh_curves)
             eq.valueChanged.connect(self.valueChanged.emit)
         
         self.viewBox = MyViewBox()
         self.graphicsview  = pg.GraphicsView()
-        mainlayout.addWidget(self.graphicsview)
+        #~ mainlayout.addWidget(self.graphicsview)
+        self.tab.addTab(self.graphicsview, 'plot')
         self.plot = pg.PlotItem(viewBox = self.viewBox)
         self.plot.setLogMode(x=True, y = False)
         self.graphicsview.setCentralItem(self.plot)
@@ -217,6 +227,8 @@ class HearingLossParameter(QtGui.QWidget):
             #~ for e in loss:
                 #~ e['db_loss'] = 0.
             #~ eq.set(loss)
+    def copy_l_to_r(self):
+        self.eqs[1].set(self.eqs[0].get())
 
     def load(self):
         fd = QtGui.QFileDialog(fileMode= QtGui.QFileDialog.ExistingFile, acceptMode = QtGui.QFileDialog.AcceptOpen)
