@@ -5,6 +5,7 @@ import numpy as np
 import scipy.interpolate
 import json
 
+from hearinglosssimulator.gui.tools import MplCanvas
 
 _default_bands = [ {'freq' : np.ceil(100*((2**(1./3.))**i)), 'db_loss': 0.}  for i in range(20) ]
 
@@ -72,10 +73,10 @@ class OneEq(QtGui.QWidget):
         self.band_widgets = []
         for band_value in band_values:
             w = Band()
-            w.valueChanged.connect(self.valueChanged.emit)
             self.mainlayout.addWidget(w)
             w.set(**band_value)
             self.band_widgets.append(w)
+            w.valueChanged.connect(self.valueChanged.emit)
 
     def get(self):
         band_values = [w.get() for w in self.band_widgets]
@@ -130,13 +131,24 @@ class HearingLossParameter(QtGui.QWidget):
         self.graphicsview  = pg.GraphicsView()
         mainlayout.addWidget(self.graphicsview)
         self.plot = pg.PlotItem(viewBox = self.viewBox)
-        #~ self.plot.setLogMode(x=True, y = False)
+        self.plot.setLogMode(x=True, y = False)
         self.graphicsview.setCentralItem(self.plot)
         
         for i, ear in enumerate(ears):
             color = ['#FF0000', '#00FF00'][i]
             curve = pg.PlotCurveItem(pen = color)
             self.plot.addItem(curve)
+
+        #~ self.canvas = MplCanvas()
+        #~ mainlayout.addWidget(self.canvas)
+        
+        #~ ax = self.canvas.ax
+        #~ self.lines = []
+        #~ for i, ear in enumerate(ears):
+            #~ colors = ['#FF0000', '#00FF00']
+            #~ self.lines.extend(ax.plot([], [], color= colors[i]))
+        
+        
         self.set_configuration()
     
     def set_configuration(self, loss_weigth = [_default_bands]*2,):
@@ -164,10 +176,39 @@ class HearingLossParameter(QtGui.QWidget):
             db_loss  = np.array(db_loss)
             f = scipy.interpolate.interp1d(freqs, db_loss, kind='linear')
             x =np.arange(50,22000, 10)
-            self.plot.items[i].setData(x, f(x))
+            #~ self.plot.items[i].setData(x, f(x))
             
-        self.plot.setXRange(0, 23000)
+            self.plot.items[i].setData(np.log10(x), f(x))
+            
+        #~ self.plot.setXRange(0, 23000)
+        self.plot.setXRange(np.log10(40), np.log10(23000))
         self.plot.setYRange(-80, 0.)
+
+    #~ def refresh_curves(self):
+        #~ print('refresh_curves')
+        
+        #~ ax = self.canvas.ax
+        #~ ax.clear()
+        #~ loss_weigth = self.get_configuration()['loss_weigth']
+        #~ for i in range(2):
+            #~ freqs = [0., ]
+            #~ db_loss = [0., ]
+            #~ for v in loss_weigth[i]:
+                #~ freqs.append(v['freq'])
+                #~ db_loss.append(v['db_loss'])
+            #~ freqs += [23000., ]
+            #~ db_loss += [0., ]
+            #~ freqs  = np.array(freqs)
+            #~ db_loss  = np.array(db_loss)
+            #~ f = scipy.interpolate.interp1d(freqs, db_loss, kind='linear')
+            #~ x =np.arange(50,22000, 10)
+            #~ colors =  ['#FF0000', '#00FF00']
+            #~ ax.semilogx(x, f(x), color=colors[i])
+            
+        #~ ax.set_xlim(0, 23000)
+        #~ ax.set_ylim(-80, 0.)
+        #~ self.canvas.draw()
+
     
     def set_flat(self):
         for eq in self.eqs:

@@ -76,6 +76,7 @@ class MainWindow(QtGui.QWidget):
         self.but_start_stop = QtGui.QPushButton(u'Start/Stop playback', checkable = True)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
         self.but_start_stop.setEnabled(False)
+        self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
         mainlayout.addWidget(self.but_start_stop)
 
         self.but_enable_bypass = QtGui.QPushButton(u'Enable/bypass simulator', checkable = True)
@@ -89,7 +90,10 @@ class MainWindow(QtGui.QWidget):
         self.hearingLossParameter = HearingLossParameter()
         mainlayout.addWidget(self.hearingLossParameter)
 
-        
+        self.timer_icon = QtCore.QTimer(interval=1000)
+        self.timer_icon.timeout.connect(self.flash_icon)
+        self.flag_icon = True
+        self.timer_icon.start()
         
         
 
@@ -105,7 +109,17 @@ class MainWindow(QtGui.QWidget):
         #~ self.able_to_start = False
         
         self.pyacq_manager = None
-
+        self.nodes_done = False
+    
+    def flash_icon(self):
+        if self.running():
+            self.flag_icon = not(self.flag_icon)
+            if self.flag_icon:
+                self.but_start_stop.setIcon(QtGui.QIcon.fromTheme(''))
+            else:
+                self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+        else:
+            self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
 
 
     def warn(self, title, text):
@@ -249,9 +263,12 @@ class MainWindow(QtGui.QWidget):
         
         self.but_start_stop.setEnabled(True)
         self.but_enable_bypass.setEnabled(True)
+        
+        self.nodes_done = True
     
     def running(self):
-        if not hasattr(self, 'audio_device'):
+        #~ if not hasattr(self, 'audio_device'):
+        if not self.nodes_done:
             return False
         
         return self.audio_device.running()
@@ -274,6 +291,11 @@ class MainWindow(QtGui.QWidget):
     
     def enable_bypass_simulator(self, checked):
         self.node.set_bypass(checked)
+        if checked:
+            self.but_enable_bypass.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+        else:
+            self.but_enable_bypass.setIcon(QtGui.QIcon.fromTheme(''))
+            
 
 
         
