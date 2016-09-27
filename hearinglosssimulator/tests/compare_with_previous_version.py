@@ -10,8 +10,10 @@ import helper
 
 
 #~ path = '/home/sgarcia/test_HLS/'
-path = '/home/samuel/test_HLS/'
-#~ path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
+#~ path = '/home/samuel/test_HLS/'
+path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
+#~ path = 'N:/cap/Data/data_psyac/casque_simulation_perte_anr_aida/test_HLS/'
+
 
 if not os.path.exists(path):
     os.mkdir(path)
@@ -78,8 +80,8 @@ def compare_old_and_new():
     out_buffer_old = np.fromstring(open(path+'sound_filtered_old.raw', mode='rb').read(), dtype='float32').reshape(length, nb_channel)
     out_buffer_new = np.fromstring(open(path+'sound_filtered_new.raw', mode='rb').read(), dtype='float32').reshape(length, nb_channel)
     
-    out_buffer_old = out_buffer_old[backward_chunksize-chunksize:-chunksize, :]
-    out_buffer_new = out_buffer_new[:out_buffer_old.shape[0], :]
+    #~ out_buffer_old = out_buffer_old[backward_chunksize-chunksize:-chunksize, :]
+    #~ out_buffer_new = out_buffer_new[:out_buffer_old.shape[0], :]
     
     print(out_buffer_old.shape)
     print(out_buffer_new.shape)
@@ -93,7 +95,7 @@ def compare_old_and_new():
     ax[0].plot(in_buffer[:, chan], color = 'b')
     ax[1].plot(out_buffer_old[:, chan], color = 'g')
     ax[1].plot(out_buffer_new[:, chan], color = 'r', ls='--')
-    ax[2].plot(residuals, color = 'm')
+    ax[2].plot(residuals[:, chan], color = 'm')
     
     #~ for i in range(nloop):
         #~ ax[1].axvline(i*chunksize)

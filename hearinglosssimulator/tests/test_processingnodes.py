@@ -9,8 +9,8 @@ import helper
 
 #~ exit()
 
-nb_channel = 2
-#~ nb_channel = 1
+#~ nb_channel = 2
+nb_channel = 1
 
 sample_rate =44100.
 
@@ -22,7 +22,7 @@ backward_chunksize = chunksize*2
 #~ backward_chunksize = chunksize*5
 backward_chunksize = chunksize*4
 
-nloop = 200
+nloop = 20
 
 length = int(chunksize*nloop)
 
