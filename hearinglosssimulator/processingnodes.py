@@ -411,10 +411,10 @@ class MainProcessing(CL_BaseProcessingNode):
         if not data.flags['C_CONTIGUOUS']:
             data = data.copy()
         pyopencl.enqueue_copy(self.queue,  self.in_channel_cl, data)
-        global_size = (self.chunksize, self.nb_freq_band, self.nb_channel)
-        local_size = (self.chunksize, 1, 1,)
+        global_size = (self.nb_freq_band, self.nb_channel)
+        local_size = (1, self.nb_channel,)
         event = self.opencl_prg.transpose_and_repeat_channel(self.queue, global_size, local_size,
-                                self.in_channel_cl, self.in_pgc1_cl, np.int32(self.nb_channel), np.int32(self.nb_freq_band))
+                                self.in_channel_cl, self.in_pgc1_cl, np.int32(self.nb_freq_band))
         event.wait()        
         
         

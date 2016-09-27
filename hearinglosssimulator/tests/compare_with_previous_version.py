@@ -10,7 +10,8 @@ import helper
 
 
 #~ path = '/home/sgarcia/test_HLS/'
-path = '/home/samuel/test_HLS/'
+#~ path = '/home/samuel/test_HLS/'
+path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
 
 if not os.path.exists(path):
     os.mkdir(path)
@@ -37,7 +38,7 @@ def setup_files():
     globals().update(params)
     length = nloop*chunksize
     
-    in_buffer = hls.moving_erb_noise(length, samplerate=sample_rate, speed = .5,  f1=80., f2=1000.,  ampl = .8)
+    in_buffer = hls.moving_erb_noise(length, sample_rate=sample_rate, speed = .5,  f1=80., f2=1000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     with open(path+'sound.raw', mode='wb') as f:
         f.write(in_buffer.tobytes())
@@ -78,7 +79,7 @@ def compare_old_and_new():
     out_buffer_new = np.fromstring(open(path+'sound_filtered_new.raw', mode='rb').read(), dtype='float32').reshape(length, nb_channel)
     
     out_buffer_old = out_buffer_old[backward_chunksize-chunksize:-chunksize, :]
-    out_buffer_new = out_buffer_old[:out_buffer_old.shape[0], :]
+    out_buffer_new = out_buffer_new[:out_buffer_old.shape[0], :]
     
     print(out_buffer_old.shape)
     print(out_buffer_new.shape)
