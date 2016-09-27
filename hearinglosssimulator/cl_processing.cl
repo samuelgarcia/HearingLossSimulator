@@ -173,7 +173,7 @@ __kernel void reset_zis(__global  float *zis){
 
 
 
-__kernel void transpose_and_repeat_channel(__global float *inbuffer, __global float *output, int nb_repeat){
+__kernel void transpose_and_repeat_channel(__global float *inbuffer, __global float *output,  int shape_in_1,   int nb_repeat){
     
     //int pos = get_global_id(0);
     //int r = get_global_id(1);
@@ -183,6 +183,7 @@ __kernel void transpose_and_repeat_channel(__global float *inbuffer, __global fl
     
     //output[offset_out+pos] = inbuffer[shape_in_1*pos+chan];
     
+    /*
     int r = get_global_id(0);
     int chan = get_global_id(1);
     
@@ -191,7 +192,15 @@ __kernel void transpose_and_repeat_channel(__global float *inbuffer, __global fl
     int offset_out = (chan*nb_repeat*chunksize) + r*chunksize;    
     
     for (int s=0; s<chunksize;s++) output[offset_out+s] = inbuffer[offset_in+s];
-    
+    */
 
+    int r = get_global_id(0);
+    int chan = get_global_id(1);
+    
+    int offset_out = (chan*nb_repeat*chunksize) + r*chunksize;
+    
+    for (int s=0; s<chunksize;s++) output[offset_out+s] = inbuffer[shape_in_1*s+chan];
+    
+    
 }
 

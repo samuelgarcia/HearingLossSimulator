@@ -10,8 +10,8 @@ import helper
 
 
 #~ path = '/home/sgarcia/test_HLS/'
-#~ path = '/home/samuel/test_HLS/'
-path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
+path = '/home/samuel/test_HLS/'
+#~ path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
 
 if not os.path.exists(path):
     os.mkdir(path)

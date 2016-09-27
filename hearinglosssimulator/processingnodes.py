@@ -447,20 +447,19 @@ class MainProcessing(CL_BaseProcessingNode):
         ring_pos = (chunkcount-1) % self.backward_ratio
         
         # repeat each channels in nb_freq_band
-        
-        #~ for chan in range(self.nb_channel): #this numpy version
+        #~ for chan in range(self.nb_channel): #this is the numpy version for comparison
             #~ self.in_pgc1[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :] = data[:, chan]
         #~ pyopencl.enqueue_copy(self.queue,  self.in_pgc1_cl, self.in_pgc1)
         
-        #TODO change this CL implementation because this fail on small GPU because of local_size (too big)
+        # This is the opencl version
         if not data.flags['C_CONTIGUOUS']:
             data = data.copy()
         pyopencl.enqueue_copy(self.queue,  self.in_channel_cl, data)
         global_size = (self.nb_freq_band, self.nb_channel)
-        local_size = (1, self.nb_channel,)
+        local_size = (self.nb_freq_band, 1,)
         event = self.opencl_prg.transpose_and_repeat_channel(self.queue, global_size, local_size,
-                                self.in_channel_cl, self.in_pgc1_cl, np.int32(self.nb_freq_band))
-        event.wait()        
+                                self.in_channel_cl, self.in_pgc1_cl, np.int32(self.nb_channel), np.int32(self.nb_freq_band))
+        event.wait()
         
         
         #pgc1
