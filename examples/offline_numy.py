@@ -8,7 +8,7 @@ length = int(sample_rate*duration)
 nb_channel = 2
 
 # there are some helper for creating in_sounds in hls.in_soundgenerators
-in_sound = hls.whitenoise(length, samplerate=sample_rate,)
+in_sound = hls.whitenoise(length, sample_rate=sample_rate,)
 #~ in_sound = hls.moving_erb_noise(length,  trajectorytype='sinus', speed = .1)
 
 # the shape must (length, nb_channel) so

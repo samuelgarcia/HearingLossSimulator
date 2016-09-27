@@ -46,7 +46,7 @@ def whitenoise(length, sample_rate = 44100., ampl = .1):
     sound =np.random.randn(length) *  ampl
     return sound.astype('float32')
 
-def notchnoise(length, sample_rate = 44100.,  f1 = 1000., f2 = 2000., ampl = .1):
+def notchnoise_fft(length, sample_rate = 44100.,  f1 = 1000., f2 = 2000., ampl = .1):
     sound =np.random.randn(length) *  ampl
     soundf = np.fft.fft(sound, n = sound.size)
     n1 =  int(f1/sample_rate*sound.size)

@@ -7,6 +7,26 @@ import time
 
 import hearinglosssimulator as hls
 
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib import pyplot
+
+class MplCanvas(FigureCanvasQTAgg):
+    def __init__(self, parent=None, ):
+        self.fig, self.ax = pyplot.subplots()
+        FigureCanvasQTAgg.__init__(self, self.fig)
+        self.setParent(parent)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.updateGeometry()
+        self.fig.set_facecolor('#FFFFFF')
+        
+def test_Canvas():
+    app = pg.mkQApp()
+    win = MplCanvas()
+    win.show()
+    app.exec_()    
+
+
 class FreqGainDuration(QtGui.QWidget):
     def __init__(self, parent = None):
         QtGui.QWidget.__init__(self, parent)
@@ -99,7 +119,8 @@ def test_play_input_to_output():
 
 
 if __name__ == '__main__':
-    test_FreqGainDuration()
+    test_Canvas()
+    #~ test_FreqGainDuration()
     #~ test_play_sinus()
     #~ test_play_input_to_output()
 

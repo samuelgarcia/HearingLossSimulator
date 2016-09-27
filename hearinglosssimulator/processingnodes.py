@@ -7,7 +7,7 @@ import scipy.interpolate
 
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
-from pyqtgraph.util.mutex import Mutex
+#~ from pyqtgraph.util.mutex import Mutex
 
 import pyopencl
 mf = pyopencl.mem_flags
@@ -36,6 +36,15 @@ Note:
 
 """
 
+
+class Mutex(QtCore.QMutex):
+    def __exit__(self, *args):
+        self.unlock()
+
+    def __enter__(self):
+        self.lock()
+        return self    
+
 class NodeThread(pyacq.ThreadPollInput):
     def __init__(self, input_stream, output_stream, proccesing_func,  timeout = 200, parent = None):
         pyacq.ThreadPollInput.__init__(self, input_stream, timeout = timeout, return_data=True, parent = parent)
@@ -54,6 +63,7 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
     def __init__(self, parent = None, **kargs):
         QtCore.QObject.__init__(self, parent)
         pyacq.Node.__init__(self, **kargs)
+
     
     def _configure(self):
         pass
@@ -71,8 +81,6 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
     
     def _initialize(self):
         self.thread = NodeThread(self.input, self.outputs['signals'], self.proccesing_func)
-        #~ self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
-                            #~ self.output.params['dtype'], self.chunksize)
     
     def _start(self):
         print
@@ -86,12 +94,6 @@ class BaseProcessingNode(pyacq.Node,  QtCore.QObject):
     def proccesing_func(self, pos, data):
         raise(NotImplementedError)
     
-    #~ def set_coefficients(self, coefficients):
-        #~ self.coefficients = coefficients
-        #~ if self.initialized():
-            #~ self.thread.set_params(self.engine, self.coefficients, self.nb_channel,
-                                #~ self.output.params['dtype'], self.chunksize)
-
 
 cl_code_filename = os.path.join(os.path.dirname(__file__), 'cl_processing.cl')
 with open(cl_code_filename, mode='r') as f:
@@ -125,8 +127,6 @@ class CL_BaseProcessingNode(BaseProcessingNode):
     
     def initlalize_cl(self):
         self.opencl_prg = None
-        self.global_size = None
-        self.local_size = None
         raise(NotImplementedError)
         
     
@@ -172,19 +172,46 @@ class MainProcessing(CL_BaseProcessingNode):
     
     
     """
-    def _configure(self, nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
-                tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
-                calibration =  93.979400086720375,
-                loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
-                chunksize=512, backward_chunksize=1024, debug_mode=False, **kargs):
+    def _configure(self, **params):
         """
         Parameters for configure
         -------
         coefficients: per channel sos filter coefficient shape (nb_channel, nb_section, 6)
         
         """
-        CL_BaseProcessingNode._configure(self, **kargs)
-
+        
+        CL_BaseProcessingNode._configure(self, gpu_platform_index=params.pop('gpu_platform_index', None),
+                                                                        gpu_device_index=params.pop('gpu_device_index', None))
+        
+        self.mutex_bypass = Mutex()
+        
+        self._apply_configure(**params)
+    
+    def online_configure(self, **params):
+        
+        print(params)
+        t0 = time.perf_counter()
+        self._apply_configure(**params)
+        t1 = time.perf_counter()
+        print(t1-t0)
+        self.make_filters()
+        t2 = time.perf_counter()
+        print(t2-t1)
+        with self.mutex_bypass:        
+            self.initlalize_cl()
+        t3 = time.perf_counter()
+        print(t3-t2)
+        print(t3-t0)
+        
+        
+        
+    
+    def _apply_configure(self, nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
+                tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
+                calibration =  93.979400086720375,
+                loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
+                chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False, **kargs):
+        
         self.nb_freq_band = nb_freq_band
         self.low_freq = low_freq
         self.hight_freq = hight_freq
@@ -200,7 +227,10 @@ class MainProcessing(CL_BaseProcessingNode):
         assert self.backward_chunksize%self.chunksize==0, 'backward_chunksize must multiple of chunksize'
         self.backward_ratio = self.backward_chunksize//self.chunksize
         
+        self.bypass = bypass
         self.debug_mode = debug_mode
+        
+    
         
 
     def after_input_connect(self, inputname):
@@ -314,7 +344,9 @@ class MainProcessing(CL_BaseProcessingNode):
         self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
         # one decay per band (for testing)
         #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
-
+    
+    
+    
     
     def initlalize_cl(self):
         """
@@ -326,7 +358,10 @@ class MainProcessing(CL_BaseProcessingNode):
           * pgc2: 
         
         """
-        self.make_filters()
+        
+        if not hasattr(self, 'coefficients_pgc'):
+            # first call
+            self.make_filters()
         
         
         self.dtype = self.input.params['dtype']
@@ -392,11 +427,21 @@ class MainProcessing(CL_BaseProcessingNode):
         prg = pyopencl.Program(self.ctx, kernel)
         self.opencl_prg = prg.build(options='-cl-mad-enable')
         
-        
+    
+    def set_bypass(self, bypass):
+        with self.mutex_bypass:
+            self.bypass = bypass
     
     def proccesing_func(self, pos, data):
         
         assert data.shape == (self.chunksize, self.nb_channel), 'data.shape error {} {}'.format(data.shape, (self.chunksize, self.nb_channel))
+        
+        with self.mutex_bypass:
+            
+            if self.bypass:
+                # TODO make same latency as proccessing
+                return pos, data
+        
         
         chunkcount = pos // self.chunksize
         ring_pos = (chunkcount-1) % self.backward_ratio
