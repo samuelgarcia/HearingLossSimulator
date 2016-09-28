@@ -54,7 +54,8 @@ def play_with_vlc(sounds, sample_rate = 44100):
         soundfilenames.append(soundfilename)
     
     #~ print ' '.join(soundfilenames)
-    os.system('vlc '+' '.join(soundfilenames))
+    #~ os.system('vlc '+' '.join(soundfilenames))
+    os.system('vlc '+' '.join('"{}"'.format(f) for f in soundfilenames))
 
 
 

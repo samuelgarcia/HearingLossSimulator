@@ -52,6 +52,7 @@ def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf
             if time_stats:
                 t0 = time.perf_counter()
             #~ print(np.mean(in_chunk**2))
+            
             out_index, processed_data = node.proccesing_func(index, in_chunk)
             if time_stats:
                 time_durations.append(time.perf_counter()-t0)
@@ -136,16 +137,16 @@ class WaveNumpy:
         self.file.seek(sl0.start)
         buf = self.file.read(frames=sl0.stop-sl0.start,dtype='float32', always_2d=True)
         buf = buf[:, sl1]
-        #~ print(np.mean(buf**2))
+        #~ print(sl, np.mean(buf**2), np.max(np.abs(buf)))
         return buf
         
         
         
 
-def compute_wave_file(in_filename, out_filename, **params):
+def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
     assert in_filename != out_filename
     buffer_in = WaveNumpy(in_filename)
-    in_wav = buffer_in.file 
+    in_wav = buffer_in.file
     out_wav = soundfile.SoundFile(out_filename, 'w', channels=in_wav.channels, samplerate=in_wav.samplerate, subtype='FLOAT')
     
     sample_rate = float(in_wav.samplerate)
@@ -166,7 +167,14 @@ def compute_wave_file(in_filename, out_filename, **params):
         if processed_data is not None:
             #~ print(processed_data.shape)
             out_wav.write(processed_data)
-            
+        
+        #~ print(duration_limit, out_index, sample_rate)
+        if duration_limit is not None and out_index is not None and\
+                out_index/sample_rate>=duration_limit:
+            print('break')
+            break
+        
+        
         #~ if 
     
     #~ node, out_buffers

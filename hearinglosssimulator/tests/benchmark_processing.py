@@ -11,9 +11,9 @@ nb_channel = 2
 sample_rate =44100.
 
 #~ chunksize = 256
-#~ chunksize = 512
+chunksize = 512
 #~ chunksize = 1024
-chunksize = 2048
+#~ chunksize = 2048
 #~ backward_chunksize = chunksize*2
 #~ backward_chunksize = chunksize*5
 backward_chunksize = chunksize*4
