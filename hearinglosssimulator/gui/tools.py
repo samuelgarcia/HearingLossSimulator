@@ -84,6 +84,8 @@ def play_sinus(freq, dbgain, duration, output_device_index, nb_channel=2):
     hls.play_with_pyaudio(sound, sample_rate=44100., output_device_index=output_device_index, chunksize=1024)
     
 
+    
+
 def test_play_sinus():
     play_sinus(1000., -30, 4., 10)
 

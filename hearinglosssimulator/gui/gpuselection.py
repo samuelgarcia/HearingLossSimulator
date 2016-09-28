@@ -29,7 +29,10 @@ class GpuDeviceSelection(QtGui.QWidget):
             self.combo_platform.setCurrentIndex(platform_index)
         except: 
             pass
-        self.resfresh_device_list(platform_index)
+        try:
+            self.resfresh_device_list(platform_index)
+        except:
+            pass
         try:
             self.combo_dev.setCurrentIndex(device_index)
         except: 

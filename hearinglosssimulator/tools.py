@@ -42,7 +42,6 @@ def play_with_vlc(sounds, sample_rate = 44100):
     soundfilenames = [ ]
     for name, sound_buffer in sounds.items():
         soundfilename = dir+name+'.wav'
-        print(sound_buffer.ndim)
         if sound_buffer.ndim==1:
             nb_channel = 1
         else:
@@ -81,4 +80,7 @@ def play_with_pyaudio(sound, sample_rate = 44100, output_device_index=None, chun
         chunk = sound[i*chunksize:(i+1)*chunksize]
         if chunk.size>0:
             audiostream.write(bytes(chunk))
+    
+    audiostream.close()
+    pa.terminate()
     
