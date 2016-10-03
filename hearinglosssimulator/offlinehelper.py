@@ -5,7 +5,7 @@ import pyacq
 
 import soundfile
 
-from .processingnodes import MainProcessing
+from .invcgc import MainProcessing
 
 
 def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf={}, dtype='float32', 
