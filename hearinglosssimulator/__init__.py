@@ -6,8 +6,10 @@ from .invcgc import *
 from .offlinehelper import *
 
 
-try:
-    from invcgc_pyacq import *    
-except ImportError:
-    pass
+from .pyacqnodes import *
+
+#~ try:
+    #~ from invcgc_pyacq import *    
+#~ except ImportError:
+    #~ pass
 
