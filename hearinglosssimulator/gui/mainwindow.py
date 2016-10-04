@@ -6,6 +6,8 @@ import json
 
 from collections import OrderedDict
 
+import sounddevice as sd
+
 import pyacq
 
 import hearinglosssimulator as hls
@@ -156,16 +158,11 @@ class MainWindow(QtGui.QWidget):
     
     
     def change_audio_device(self):
-        self.calibrationWidget.output_device_index = self.output_device_index
-        self.calibrationWidget.input_device_index = self.input_device_index
+        self.calibrationWidget.device = self.device
     
     @property
-    def output_device_index(self):
-        return self.audioDeviceSelection.get_configuration()['output_device_index']
-
-    @property
-    def input_device_index(self):
-        return self.audioDeviceSelection.get_configuration()['input_device_index']
+    def device(self):
+        return self.audioDeviceSelection.get_configuration()['device']
 
     @property
     def gpu_platform_index(self):
@@ -190,13 +187,16 @@ class MainWindow(QtGui.QWidget):
         for k , element in self.configuration_elements.items():
             if k in all_config:
                 #~ print(k, all_config[k])
-                element.set_configuration(**all_config[k])
+                try:
+                    element.set_configuration(**all_config[k])
+                except:
+                    pass
 
-    def on_hearingloss_changed(self):
-        pass
+    #~ def on_hearingloss_changed(self):
+        #~ pass
     
-    
-    def params_for_node(self):
+    #~ def params_for_node(self):
+    def params_for_processing(self):
         chunksize = 512
         backward_chunksize = chunksize * 3
         
@@ -206,7 +206,8 @@ class MainWindow(QtGui.QWidget):
 
         
         params = dict(
-                nb_freq_band=32, low_freq = 80., hight_freq = 20000.,
+                #~ nb_freq_band=32, low_freq = 80., hight_freq = 20000.,
+                nb_freq_band=10, low_freq = 80., hight_freq = 15000.,
                 tau_level = 0.005, level_step =10., level_max = 120., #smooth_time = 0.0005, 
                 calibration =  calibration,
                 loss_weigth = loss_weigth,
@@ -218,79 +219,117 @@ class MainWindow(QtGui.QWidget):
             )
         return params
 
-        
-    def setup_pyacq_nodes(self):
-        if self.pyacq_manager is not None:
-            self.pyacq_manager.close()
-        
+    
+    def setup_audio_stream(self):
         nb_channel = 2
         sample_rate = 44100.
-        params = self.params_for_node()
+        params = self.params_for_processing()
+        dtype='float32'
         
-        stream_spec = dict(protocol='tcp', interface='127.0.0.1', transfertmode='plaindata')
+        self.processing = hls.InvCGC(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **params)
         
-        background = True
-        #~ background = False
-        if background:
-            self.pyacq_manager = pyacq.create_manager()
-            ng0 = self.pyacq_manager.create_nodegroup()  # process for device
-            ng1 = self.pyacq_manager.create_nodegroup()  # process for processing
-            self.audio_device = ng0.create_node('PyAudio')
-            ng1.register_node_type_from_module('hearinglosssimulator', 'InvCGCNode')
-            self.node = ng1.create_node('InvCGCNode')
-        else:
-            self.audio_device = pyacq.PyAudio()
-            self.node = hls.InvCGCNode()
+        self.index = 0
+        def callback(indata, outdata, frames, time, status):
+            if status:
+                print(status, flush=True)
+            self.index += frames
+            returns = self.processing.proccesing_func(self.index, indata)
+            index2, out = returns['main_output']
+            if index2 is not None:
+                outdata[:] = indata
+            else:
+                outdata[:] = 0
         
-        self.audio_device.configure(nb_channel=nb_channel, sample_rate=sample_rate,
-                      input_device_index=self.input_device_index,
-                      output_device_index=self.output_device_index,
-                      format='float32', chunksize=params['chunksize'])
-        self.audio_device.output.configure(**stream_spec)
-        self.audio_device.initialize()
-        
-        self.node.configure(**params)
-        
-        self.node.input.connect(self.audio_device.output)
-        self.node.outputs['signals'].configure(**stream_spec)
-        if background:
-            # this do compute filter take very long
-            self.node.initialize(_timeout=60.)
-        else:
-            self.node.initialize()
-
-        self.audio_device.input.connect(self.node.outputs['signals'])
+        latency = 'low'
+        #~ latency = 'high'
+        self.stream = sd.Stream(channels=nb_channel, callback=callback, samplerate=sample_rate, blocksize=params['chunksize'],
+                        latency=latency)
         
         self.but_start_stop.setEnabled(True)
         self.but_enable_bypass.setEnabled(True)
         
         self.nodes_done = True
+        
+        
+    #~ def setup_pyacq_nodes(self):
+        #~ if self.pyacq_manager is not None:
+            #~ self.pyacq_manager.close()
+        
+        #~ nb_channel = 2
+        #~ sample_rate = 44100.
+        #~ params = self.params_for_node()
+        
+        #~ stream_spec = dict(protocol='tcp', interface='127.0.0.1', transfertmode='plaindata')
+        
+        #~ background = True
+        #~ #background = False
+        #~ if background:
+            #~ self.pyacq_manager = pyacq.create_manager()
+            #~ ng0 = self.pyacq_manager.create_nodegroup()  # process for device
+            #~ ng1 = self.pyacq_manager.create_nodegroup()  # process for processing
+            #~ self.audio_device = ng0.create_node('PyAudio')
+            #~ ng1.register_node_type_from_module('hearinglosssimulator', 'InvCGCNode')
+            #~ self.node = ng1.create_node('InvCGCNode')
+        #~ else:
+            #~ self.audio_device = pyacq.PyAudio()
+            #~ self.node = hls.InvCGCNode()
+        
+        #~ self.audio_device.configure(nb_channel=nb_channel, sample_rate=sample_rate,
+                      #~ input_device_index=self.input_device_index,
+                      #~ output_device_index=self.output_device_index,
+                      #~ format='float32', chunksize=params['chunksize'])
+        #~ self.audio_device.output.configure(**stream_spec)
+        #~ self.audio_device.initialize()
+        
+        #~ self.node.configure(**params)
+        
+        #~ self.node.input.connect(self.audio_device.output)
+        #~ self.node.outputs['signals'].configure(**stream_spec)
+        #~ if background:
+            #~ # this do compute filter take very long
+            #~ self.node.initialize(_timeout=60.)
+        #~ else:
+            #~ self.node.initialize()
+
+        #~ self.audio_device.input.connect(self.node.outputs['signals'])
+        
+        #~ self.but_start_stop.setEnabled(True)
+        #~ self.but_enable_bypass.setEnabled(True)
+        
+        #~ self.nodes_done = True
     
     def running(self):
         #~ if not hasattr(self, 'audio_device'):
         if not self.nodes_done:
             return False
         
-        return self.audio_device.running()
+        #~ return self.audio_device.running()
+        return self.stream.active
+        
     
     def compute_filters(self):
-        if not hasattr(self, 'audio_device'):
-            self.setup_pyacq_nodes()
+        if not hasattr(self, 'stream'):
+            #~ self.setup_pyacq_nodes()
+            self.setup_audio_stream()
         else:
             params = self.params_for_node()
-            self.node.online_configure(**params, _timeout=60.)
+            #~ self.node.online_configure(**params, _timeout=60.)
+            self.processing.online_configure(**params)
     
     def start_stop_audioloop(self, checked):
+        #~ if checked:
+            #~ self.audio_device.start()
+            #~ self.node.start()
+        #~ else:
+            #~ self.audio_device.stop()
+            #~ self.node.stop()
         if checked:
-            self.audio_device.start()
-            self.node.start()
+            self.stream.start()
         else:
-            self.audio_device.stop()
-            self.node.stop()
-    
+            self.stream.stop()
     
     def enable_bypass_simulator(self, checked):
-        self.node.set_bypass(checked)
+        self.processing.set_bypass(checked)
         if checked:
             self.but_enable_bypass.setIcon(QtGui.QIcon.fromTheme('process-stop'))
         else:

@@ -3,15 +3,14 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
 
-from hearinglosssimulator.gui.tools import FreqGainDuration, play_sinus, play_input_to_output
+from hearinglosssimulator.gui.guitools import FreqGainDuration, play_sinus, play_input_to_output
 
 
 class Calibration(QtGui.QWidget):
-    def __init__(self, input_device_index=None, output_device_index=None, parent = None):
+    def __init__(self, input_device_index=None, device=None, parent = None):
         QtGui.QWidget.__init__(self, parent)
 
-        self.input_device_index = input_device_index
-        self.output_device_index = output_device_index
+        self.device = device
         
         
         mainlayout  =QtGui.QVBoxLayout()
@@ -67,12 +66,11 @@ class Calibration(QtGui.QWidget):
 
     def play_sinus(self):
         p = self.freqgainduration.get()
-        print('ici',  self.output_device_index)
-        play_sinus(p['freq'], p['gain'], p['duration'], self.output_device_index)
+        play_sinus(p['freq'], p['gain'], p['duration'], self.device)
     
     def play_input_to_output(self):
         duration = self.freqgainduration.get()['duration']
-        play_input_to_output(duration, self.input_device_index, self.output_device_index,  sample_rate=44100, chunksize=1024, nb_channel=2)
+        play_input_to_output(duration, self.device,  sample_rate=44100, chunksize=1024, nb_channel=2)
     
     def refresh_label_db_input(self):
         
@@ -96,7 +94,7 @@ class Calibration(QtGui.QWidget):
 
 if __name__ == '__main__':
     app = pg.mkQApp()
-    win = Calibration( input_device_index=10, output_device_index=10)
+    win = Calibration( input_device_index=10, device='default')
     win.show()
     app.exec_()
     print(win.get_configuration())

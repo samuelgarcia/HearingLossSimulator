@@ -5,7 +5,7 @@ import numpy as np
 import scipy.interpolate
 import json
 
-from hearinglosssimulator.gui.tools import MplCanvas
+from hearinglosssimulator.gui.guitools import MplCanvas
 
 _default_bands = [ {'freq' : np.ceil(100*((2**(1./3.))**i)), 'db_loss': 0.}  for i in range(20) ]
 
