@@ -30,7 +30,12 @@ in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
 #~ exit()
 
 loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel
-node_conf = dict(nb_freq_band=32, level_step=4, loss_weigth=loss_weigth, 
+processing_conf = dict(nb_freq_band=32, level_step=4, loss_weigth=loss_weigth, 
             debug_mode=False, chunksize=chunksize, backward_chunksize=backward_chunksize)
-node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, 
-                sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+#~ node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, 
+                #~ sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+
+processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate,
+            processing_conf=processing_conf, buffersize_margin=backward_chunksize,
+             time_stats=True)
+

@@ -22,32 +22,27 @@ params = dict(
         chunksize=512, backward_chunksize=1024,
     )
 
-node = hls.MainProcessing()
-node._configure(**params)
+processing = hls.InvCGC(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', apply_configuration_at_init=False)
+processing.configure(**params)
 
-# hack to avoid input and output conenction
-node.nb_channel = nb_channel
-node.sample_rate = sample_rate
-node.dtype = 'float32'
-node.total_channel = node.nb_freq_band*node.nb_channel
-node.make_filters()
+processing.make_filters()
 
 
 
-levels_colors = [ get_cmap('jet', len(node.levels))(i) for i in range(len(node.levels)) ]
-freq_colors = [ get_cmap('jet', len(node.freqs))(i) for i in range(len(node.freqs)) ]
+levels_colors = [ get_cmap('jet', len(processing.levels))(i) for i in range(len(processing.levels)) ]
+freq_colors = [ get_cmap('jet', len(processing.freqs))(i) for i in range(len(processing.freqs)) ]
 
 
 fig1, ax1s = plt.subplots(nrows = 2, sharex = True)
 fig2, ax2 = plt.subplots(nrows = 1, sharex = True)
 fig3, ax3 = plt.subplots(nrows = 1, sharex = True)
 
-for f, freq in enumerate(node.freqs):
+for f, freq in enumerate(processing.freqs):
     gain_by_level = [ ]
-    for l, level in enumerate(node.levels):
-        hpaffilter = node.coefficients_hpaf[f,l,:,:]
-        #lpaffilter = node.lpaffilters[f,l,:,:]
-        pgcfilter = node.coefficients_pgc[f,:,:]
+    for l, level in enumerate(processing.levels):
+        hpaffilter = processing.coefficients_hpaf[f,l,:,:]
+        #lpaffilter = processing.lpaffilters[f,l,:,:]
+        pgcfilter = processing.coefficients_pgc[f,:,:]
         
         hls.plot_filter(hpaffilter, ax1s[1], sample_rate, label = '{}db'.format(level), color = levels_colors[l])
         
@@ -62,10 +57,10 @@ for f, freq in enumerate(node.freqs):
         
     gain_by_level = np.array(gain_by_level)
     
-    ax2.plot(node.levels, gain_by_level+node.levels, label = '{}Hz'.format(freq), color = freq_colors[f])
-    ax2.plot(node.levels, node.levels, ls = '--', color = 'm')
+    ax2.plot(processing.levels, gain_by_level+processing.levels, label = '{}Hz'.format(freq), color = freq_colors[f])
+    ax2.plot(processing.levels, processing.levels, ls = '--', color = 'm')
 
-    hls.plot_filter(node.coefficients_pgc[f,:,:], ax1s[1], sample_rate, label = 'pGC', color = 'k')
+    hls.plot_filter(processing.coefficients_pgc[f,:,:], ax1s[1], sample_rate, label = 'pGC', color = 'k')
 
     ax1s[0].axvline(freq, color = 'm')
     ax1s[1].axvline(freq, color = 'm')

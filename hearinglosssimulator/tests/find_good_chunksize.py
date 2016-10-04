@@ -55,10 +55,10 @@ def plot_residual():
     
     for i, backward_chunksize in enumerate(backward_chunksizes):
         print('backward_chunksize', backward_chunksize)
-        node_conf = dict(nb_freq_band=nb_freq_band, low_freq = 40., hight_freq = 500.,
+        processing_conf = dict(nb_freq_band=nb_freq_band, low_freq = 40., hight_freq = 500.,
                     level_max=120, level_step=120, debug_mode=True, 
                     chunksize=chunksize, backward_chunksize=backward_chunksize)
-        node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
+        processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
         #~ freq_band = 2
     
@@ -66,9 +66,9 @@ def plot_residual():
         online_pgc2 = online_arrs['pgc2']
         offline_pgc2 = online_pgc2.copy()
     
-        n = node.nb_freq_band
+        n = processing.nb_freq_band
         for b in range(n):
-            offline_pgc2[:, b] = scipy.signal.sosfilt(node.coefficients_pgc[b, :,:], online_hpaf[::-1,b])[::-1]
+            offline_pgc2[:, b] = scipy.signal.sosfilt(processing.coefficients_pgc[b, :,:], online_hpaf[::-1,b])[::-1]
     
         online_pgc2 = online_pgc2[:-backward_chunksize]
         offline_pgc2 = offline_pgc2[:-backward_chunksize]
@@ -83,8 +83,8 @@ def plot_residual():
         im = ax.imshow(m, interpolation='nearest', 
                     origin ='lower', aspect = 'auto', cmap = 'viridis')#, extent = extent, cmap=cmap)
         im.set_clim(0,0.05)
-        ax.set_xticks(np.arange(node.freqs.size))
-        ax.set_xticklabels(['{:0.0f}'.format(f) for f in node.freqs])
+        ax.set_xticks(np.arange(processing.freqs.size))
+        ax.set_xticklabels(['{:0.0f}'.format(f) for f in processing.freqs])
         ax.set_yticks(np.arange(len(backward_chunksizes)))
         ax.set_yticklabels(['{}'.format(f) for f in side_chunksize])
         ax.set_xlabel('freq')

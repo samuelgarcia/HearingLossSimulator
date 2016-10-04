@@ -21,7 +21,7 @@ out_sound = hls.compute_numpy(in_sound, sample_rate,
         tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
         calibration =  93.979400086720375,
         loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel,
-        chunksize=512, backward_chunksize=1024, 
+        chunksize=512, backward_chunksize=512*4, 
     )
 
 

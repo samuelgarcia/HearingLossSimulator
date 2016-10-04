@@ -5,35 +5,19 @@ import pyacq
 
 import soundfile
 
-from .invcgc import MainProcessing
+from .invcgc import InvCGC
 
 
-def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf={}, dtype='float32', 
-            buffersize_margin=0, time_stats=True, out_mode='full_buffer'):
+
+def make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate, dtype='float32', 
+            processing_conf={}, buffersize_margin=0, time_stats=True):
     
-    fake_output = pyacq.OutputStream()
-    fake_output.configure(sample_rate=sample_rate, dtype=dtype, shape=(chunksize, in_buffer.shape[1]))
-    
+    nb_channel = in_buffer.shape[1]
     buffer_size = in_buffer.shape[0]
     buffer_size2 = in_buffer.shape[0] + buffersize_margin
     
     
-    stream_spec = dict(protocol='tcp', interface='127.0.0.1', transfermode='sharedmem',
-                dtype=dtype, buffer_size=buffer_size2, double=False, sample_rate=sample_rate)
-    if out_mode=='full_buffer':
-        stream_spec['buffer_size'] = buffer_size2
-    elif out_mode=='yield_buffer':
-        stream_spec['buffer_size'] = chunksize * 2
-    
-    node = nodeclass(name='node_tested')
-    node.configure(**node_conf)
-    node.input.connect(fake_output)
-    for out_name in node.outputs.keys():
-        node.outputs[out_name].configure(**stream_spec)
-    node.initialize()
-    node.input.set_buffer(size=chunksize)
-    
-    
+    processing = ProcessingClass(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **processing_conf)
     
     def loop():
         if time_stats:
@@ -44,23 +28,22 @@ def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf
         out_index = None
         while out_index is None or out_index<buffer_size:
             index += chunksize
+            
             if index<=buffer_size:
                 in_chunk = in_buffer[index-chunksize:index, :]
             else:
                 in_chunk = np.zeros((chunksize, in_buffer.shape[1]), dtype=dtype)
-                #~ print('zeros at end')
+            
             if time_stats:
                 t0 = time.perf_counter()
-            #~ print(np.mean(in_chunk**2))
             
-            out_index, processed_data = node.proccesing_func(index, in_chunk)
+            returns = processing.proccesing_func(index, in_chunk)
             if time_stats:
                 time_durations.append(time.perf_counter()-t0)
             
-            if out_index is not None:
-                node.outputs['signals'].send(processed_data, index=out_index) # this normally done in NodeThread.process_data
+            out_index, out_chunk = returns['main_output']
             
-            yield out_index, processed_data
+            yield returns
         
         if time_stats:
             duration = time.perf_counter() - start0
@@ -70,33 +53,32 @@ def run_one_node_offline(nodeclass, in_buffer, chunksize, sample_rate, node_conf
             print('Compute time Mean: {:0.1f}ms Min: {:0.1f}ms Max: {:0.1f}ms'.format( time_durations.mean()*1000., time_durations.min()*1000., time_durations.max()*1000.))
     
     
-    if out_mode=='full_buffer':    
-        for out_index, processed_data in loop():
-            pass
-        
-        #~ print(out_index, buffer_size)
-        #~ count, bins = np.histogram(time_durations*1000., bins=np.arange(0,100,1))
-        #~ import matplotlib.pyplot as plt
-        #~ fig, ax = plt.subplots()
-        #~ ax.plot(bins[:-1], count)
-        #~ plt.show()
+    return processing, loop
     
-        out_buffers = {}
-        if out_mode=='full_buffer':    
-            for k in node.outputs.keys():
-                out_buffers[k] = node.outputs[k].sender._buffer.get_data(0, out_index)
+def run_one_class_offline(ProcessingClass, in_buffer, chunksize, sample_rate, dtype='float32', 
+            processing_conf={}, buffersize_margin=0, time_stats=True):
+    
+    processing, loop = make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate,  dtype=dtype, 
+            processing_conf=processing_conf, buffersize_margin=buffersize_margin, time_stats=time_stats)
+    
+    buffer_size = in_buffer.shape[0]
+    
+    online_arrs = {}
+    for returns in loop():
+        for k, (pos, out_chunk) in returns.items():
+            if k not in online_arrs and pos is not None:
+                online_arrs[k] = np.zeros((buffer_size, out_chunk.shape[1]), dtype=dtype)
             
-        return node, out_buffers
+            if pos is not None:
+                #~ print('pos', pos, 'k', k, out_chunk.shape)
+                if online_arrs[k][pos-out_chunk.shape[0]:pos, :].shape[0]==out_chunk.shape[0]:
+                    online_arrs[k][pos-out_chunk.shape[0]:pos, :] = out_chunk
     
-    elif out_mode=='yield_buffer':
-        return loop()
+    return processing, online_arrs
     
 
 
 def compute_numpy(sound, sample_rate, **params):
-    """
-    
-    """
     assert isinstance(sound, np.ndarray)
     
     if sound.ndim==1:
@@ -106,13 +88,14 @@ def compute_numpy(sound, sample_rate, **params):
         onedim = False
     
     sound = sound.astype('float32')
-    
+
     chunksize = params['chunksize']
     backward_chunksize =  params['backward_chunksize']
     
-    node, out_buffers = run_one_node_offline(MainProcessing, sound, chunksize, sample_rate, node_conf=params, dtype='float32', 
-            buffersize_margin=backward_chunksize, time_stats=False, out_mode='full_buffer')
-    out_sound = out_buffers['signals']
+    processing, online_arrs = run_one_class_offline(InvCGC, sound, chunksize, sample_rate, processing_conf=params, dtype='float32', 
+            buffersize_margin=backward_chunksize, time_stats=False)
+
+    out_sound = online_arrs['main_output']
     
     if onedim:
         out_sound = out_sound[:, 0]
@@ -137,7 +120,6 @@ class WaveNumpy:
         self.file.seek(sl0.start)
         buf = self.file.read(frames=sl0.stop-sl0.start,dtype='float32', always_2d=True)
         buf = buf[:, sl1]
-        #~ print(sl, np.mean(buf**2), np.max(np.abs(buf)))
         return buf
         
         
@@ -145,8 +127,8 @@ class WaveNumpy:
 
 def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
     assert in_filename != out_filename
-    buffer_in = WaveNumpy(in_filename)
-    in_wav = buffer_in.file
+    in_buffer = WaveNumpy(in_filename)
+    in_wav = in_buffer.file
     out_wav = soundfile.SoundFile(out_filename, 'w', channels=in_wav.channels, samplerate=in_wav.samplerate, subtype='FLOAT')
     
     sample_rate = float(in_wav.samplerate)
@@ -158,23 +140,18 @@ def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
         params['loss_weigth'] = params['loss_weigth']*nb_channel
     
     
+    processing, loop = make_processing_loop(InvCGC, in_buffer, chunksize, sample_rate, dtype='float32', 
+            processing_conf={}, buffersize_margin=0, time_stats=False)
     
-    iter = run_one_node_offline(MainProcessing, buffer_in, chunksize, sample_rate, node_conf=params, dtype='float32', 
-            buffersize_margin=backward_chunksize, time_stats=False, out_mode='yield_buffer')
-    
-    for i, (out_index, processed_data) in enumerate(iter):
-        #~ print(i, out_index)
+    for i, returns in enumerate(loop()):
+        out_index, processed_data = returns['main_output']
+        
         if processed_data is not None:
-            #~ print(processed_data.shape)
             out_wav.write(processed_data)
         
-        #~ print(duration_limit, out_index, sample_rate)
         if duration_limit is not None and out_index is not None and\
                 out_index/sample_rate>=duration_limit:
-            print('break')
+            #~ print('break')
             break
-        
-        
-        #~ if 
-    
-    #~ node, out_buffers
+
+

@@ -10,8 +10,8 @@ import helper
 
 
 #~ path = '/home/sgarcia/test_HLS/'
-#~ path = '/home/samuel/test_HLS/'
-path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
+path = '/home/samuel/test_HLS/'
+#~ path = 'C:/Users/HI_Simulateur/Documents/test_HLS/'
 #~ path = 'N:/cap/Data/data_psyac/casque_simulation_perte_anr_aida/test_HLS/'
 
 
@@ -60,12 +60,13 @@ def process_sound():
     in_buffer = np.fromstring(open(path+'sound.raw', mode='rb').read(), dtype='float32').reshape(length, nb_channel)
     
     
-    node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, params['chunksize'], sample_rate, node_conf=params, buffersize_margin=params['backward_chunksize'])
+    #~ node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, params['chunksize'], sample_rate, node_conf=params, buffersize_margin=params['backward_chunksize'])
+    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, params['chunksize'], sample_rate, processing_conf=params, buffersize_margin=params['backward_chunksize'])
     
-    print(online_arrs['signals'].shape)
+    print(online_arrs['main_output'].shape)
 
     with open(path+'sound_filtered_new.raw', mode='wb') as f:
-        f.write(online_arrs['signals'].tobytes())
+        f.write(online_arrs['main_output'].tobytes())
 
 
     
@@ -80,8 +81,8 @@ def compare_old_and_new():
     out_buffer_old = np.fromstring(open(path+'sound_filtered_old.raw', mode='rb').read(), dtype='float32').reshape(length, nb_channel)
     out_buffer_new = np.fromstring(open(path+'sound_filtered_new.raw', mode='rb').read(), dtype='float32').reshape(length, nb_channel)
     
-    #~ out_buffer_old = out_buffer_old[backward_chunksize-chunksize:-chunksize, :]
-    #~ out_buffer_new = out_buffer_new[:out_buffer_old.shape[0], :]
+    out_buffer_old = out_buffer_old[backward_chunksize-chunksize:-chunksize, :]
+    out_buffer_new = out_buffer_new[:out_buffer_old.shape[0], :]
     
     print(out_buffer_old.shape)
     print(out_buffer_new.shape)
