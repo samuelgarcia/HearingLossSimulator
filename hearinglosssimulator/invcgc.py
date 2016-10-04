@@ -280,12 +280,16 @@ class InvCGC:
         
         assert data.shape == (self.chunksize, self.nb_channel), 'data.shape error {} {}'.format(data.shape, (self.chunksize, self.nb_channel))
         
+        returns = {}
+        
         if self.bypass:
             # TODO make same latency as proccessing
             assert not self.debug_mode, 'debug mode do not support bypass'
-            return pos, data
+            
+            returns['main_output'] = (pos, data)
+            return returns
         
-        returns = {}
+        
         
         chunkcount = pos // self.chunksize
         ring_pos = (chunkcount-1) % self.backward_ratio

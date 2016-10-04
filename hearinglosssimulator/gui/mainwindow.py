@@ -236,11 +236,11 @@ class MainWindow(QtGui.QWidget):
             ng0 = self.pyacq_manager.create_nodegroup()  # process for device
             ng1 = self.pyacq_manager.create_nodegroup()  # process for processing
             self.audio_device = ng0.create_node('PyAudio')
-            ng1.register_node_type_from_module('hearinglosssimulator', 'MainProcessing')
-            self.node = ng1.create_node('MainProcessing')
+            ng1.register_node_type_from_module('hearinglosssimulator', 'InvCGCNode')
+            self.node = ng1.create_node('InvCGCNode')
         else:
             self.audio_device = pyacq.PyAudio()
-            self.node = hls.MainProcessing()
+            self.node = hls.InvCGCNode()
         
         self.audio_device.configure(nb_channel=nb_channel, sample_rate=sample_rate,
                       input_device_index=self.input_device_index,

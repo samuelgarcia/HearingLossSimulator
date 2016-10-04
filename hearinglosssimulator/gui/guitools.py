@@ -2,7 +2,9 @@ import PyQt5 # this force pyqtgraph to deal with Qt5
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
-import pyaudio
+
+import sounddevice as sd
+
 import time
 
 import hearinglosssimulator as hls
@@ -66,64 +68,85 @@ def test_FreqGainDuration():
     app = pg.mkQApp()
     win = FreqGainDuration()
     win.show()
-    app.exec_()    
+    app.exec_()
 
-def play_sinus(freq, dbgain, duration, output_device_index, nb_channel=2):
-    pa = pyaudio.PyAudio()
-    dev =  pa.get_device_info_by_index(output_device_index)
-    sample_rate =  dev['defaultSampleRate']
-    assert nb_channel<=dev['maxOutputChannels']
+def play_sinus(freq, dbgain, duration, device='default', nb_channel=2):
+    if device is None:
+        device='default'
+    dev = sd.query_devices(device=device)
+    sample_rate = dev['default_samplerate']
+    
     
     length = int(sample_rate * duration)+1
     sound = hls.several_sinus(length, freqs=[freq], sample_rate=sample_rate, ampl = 1.)
     sound = np.tile(sound[:, None],(1, nb_channel))
-
     gain = 10**(dbgain/20.)
     sound *= gain
     
-    hls.play_with_pyaudio(sound, sample_rate=44100., output_device_index=output_device_index, chunksize=1024)
+    sd.play(sound, device=device, blocking=True)
     
-
+    sd.stop()
+    
     
 
 def test_play_sinus():
-    play_sinus(1000., -30, 4., 10)
+    print(sd.query_devices())
+    play_sinus(1000., -30, 4., device='default')
 
 
-def play_input_to_output(duration, input_device_index, output_device_index,  sample_rate=44100, chunksize=1024, nb_channel=2):
-    pa = pyaudio.PyAudio()
+def play_input_to_output(duration, device, sample_rate=44100, chunksize=1024, nb_channel=2):
+    #~ duration = 5  # seconds
+    dev = sd.query_devices(device=device)
+    sample_rate = dev['default_samplerate']
+    print(dev)
     
-    def callback(in_data, frame_count, time_info, status):
-        return (in_data, pyaudio.paContinue)
-    
-    audiostream = pa.open(rate=int(sample_rate), channels=int(nb_channel), format= pyaudio.paFloat32,
-                    input=True, output=True, input_device_index=input_device_index, output_device_index=output_device_index,
-                    frames_per_buffer=chunksize, stream_callback=callback, start=False)
-    
-    
-    audiostream.start_stream()
-    
-    t_start = time.perf_counter()
-    while (time.perf_counter()-t_start)<duration:
-        time.sleep(0.01)
 
-    audiostream.stop_stream()
-    audiostream.close()
+    def callback(indata, outdata, frames, time, status):
+        if status:
+            print(status, flush=True)
+        outdata[:] = indata
 
-    pa.terminate()
+    with sd.Stream(device=device, channels=nb_channel, callback=callback, samplerate=sample_rate):
+        sd.sleep(int(duration * 1000)    )
+    
+    
+    
+    
+    #~ pa = pyaudio.PyAudio()
+    
+    #~ def callback(in_data, frame_count, time_info, status):
+        #~ return (in_data, pyaudio.paContinue)
+    
+    #~ audiostream = pa.open(rate=int(sample_rate), channels=int(nb_channel), format= pyaudio.paFloat32,
+                    #~ input=True, output=True, input_device_index=input_device_index, output_device_index=output_device_index,
+                    #~ frames_per_buffer=chunksize, stream_callback=callback, start=False)
+    
+    
+    #~ audiostream.start_stream()
+    
+    #~ t_start = time.perf_counter()
+    #~ while (time.perf_counter()-t_start)<duration:
+        #~ time.sleep(0.01)
+
+    #~ audiostream.stop_stream()
+    #~ audiostream.close()
+
+    #~ pa.terminate()
     
     
     
 def test_play_input_to_output():
-    play_input_to_output(4, 10,10)
+    print(sd.query_devices())
+    play_input_to_output(4, 'default')
+    #~ play_input_to_output(4, 10)
     
 
 
 
 if __name__ == '__main__':
-    test_Canvas()
+    #~ test_Canvas()
     #~ test_FreqGainDuration()
     #~ test_play_sinus()
-    #~ test_play_input_to_output()
+    test_play_input_to_output()
 
 

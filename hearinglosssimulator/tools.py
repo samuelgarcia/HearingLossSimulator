@@ -4,7 +4,9 @@ import os
 import tempfile
 
 import soundfile
-import pyaudio
+#~ import pyaudio
+import sounddevice as sd
+
 
 def sosfreqz(coeff,worN = 4096):
     # in scipy soon
@@ -58,29 +60,16 @@ def play_with_vlc(sounds, sample_rate = 44100):
 
 
 
-def play_with_pyaudio(sound, sample_rate = 44100, output_device_index=None, chunksize=1024):
-    pa = pyaudio.PyAudio()
-    
-    if output_device_index is None:
-        output_device_index = pa.get_default_output_device_info()['index']
-        #~ print('output_device_index', output_device_index)
-    
-    if sound.ndim==1:
-        nb_channel = 1
-    else:
-        nb_channel = sound.shape[1]
-    
+def play_on_device(sound, sample_rate=44100, device=None, chunksize=1024):
     sound = sound.astype('float32')
-    audiostream = pa.open(rate=int(sample_rate), channels=int(nb_channel), format= pyaudio.paFloat32,
-                    input=False, output=True, input_device_index=None, output_device_index=output_device_index,
-                    frames_per_buffer=chunksize)
+    sd.play(sound, samplerate=sample_rate, blocksize=chunksize, blocking=True)
+
+
+
+
+#~ def online_processing():
     
-    nloop = sound.shape[0]//chunksize + 1
-    for i in range(nloop):
-        chunk = sound[i*chunksize:(i+1)*chunksize]
-        if chunk.size>0:
-            audiostream.write(bytes(chunk))
-    
-    audiostream.close()
-    pa.terminate()
-    
+
+
+
+
