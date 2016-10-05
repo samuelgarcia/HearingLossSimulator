@@ -12,7 +12,7 @@ import sounddevice as sd
 import pyacq
 
 import hearinglosssimulator as hls
-from hearinglosssimulator.gui.parameters import HearingLossParameter
+from hearinglosssimulator.gui.lossparameters import HearingLossParameter
 from hearinglosssimulator.gui.calibration import Calibration
 from hearinglosssimulator.gui.audioselection import AudioDeviceSelection
 from hearinglosssimulator.gui.gpuselection import GpuDeviceSelection
