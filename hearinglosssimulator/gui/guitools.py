@@ -74,6 +74,7 @@ def play_sinus(freq, dbgain, duration, device='default', nb_channel=2):
     if device is None:
         device='default'
     dev = sd.query_devices(device=device)
+    
     sample_rate = dev['default_samplerate']
     
     
@@ -91,7 +92,10 @@ def play_sinus(freq, dbgain, duration, device='default', nb_channel=2):
 
 def test_play_sinus():
     print(sd.query_devices())
-    play_sinus(1000., -30, 4., device='default')
+    #~ play_sinus(1000., -30, 4., device='default')
+    #~ play_sinus(1000., -30, 4., device=2)
+    play_sinus(1000., -30, 4., device='Mappeur de sons Microsoft - Output')
+    #~ Mappeur de sons Microsoft
 
 
 def play_input_to_output(duration, device, sample_rate=44100, chunksize=1024, nb_channel=2):
@@ -146,7 +150,7 @@ def test_play_input_to_output():
 if __name__ == '__main__':
     #~ test_Canvas()
     #~ test_FreqGainDuration()
-    #~ test_play_sinus()
-    test_play_input_to_output()
+    test_play_sinus()
+    #~ test_play_input_to_output()
 
 

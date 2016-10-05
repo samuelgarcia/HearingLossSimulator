@@ -206,23 +206,24 @@ class MainWindow(QtGui.QWidget):
                     pass
 
     def params_for_processing(self):
-        chunksize = 512
-        backward_chunksize = chunksize * 3
+        #~ chunksize = 512
+        #~ backward_chunksize = chunksize * 3
+        chunksize = 1024
+        backward_chunksize = chunksize * 2
         
         calibration = self.calibrationWidget.get_configuration()['spl_calibration_at_zero_dbfs']
         loss_weigth_dict = self.hearingLossParameter.get_configuration()['loss_weigth']
         loss_weigth = [[(e['freq'], e['db_loss']) for e in l ] for l in loss_weigth_dict ]
-
         
+
         params = dict(
                 #~ nb_freq_band=32, low_freq = 80., hight_freq = 20000.,
                 nb_freq_band=10, low_freq = 80., hight_freq = 15000.,
-                tau_level = 0.005, level_step =10., level_max = 120.,
+                tau_level = 0.005, level_step =1., level_max = 120.,
                 calibration =  calibration,
                 loss_weigth = loss_weigth,
                 chunksize=chunksize, backward_chunksize=backward_chunksize,
-                gpu_platform_index = self.gpu_platform_index,
-                gpu_device_index = self.gpu_device_index,
+                
                 debug_mode=False,
                 bypass=self.but_enable_bypass.isChecked(),
             )
@@ -231,11 +232,20 @@ class MainWindow(QtGui.QWidget):
     
     def setup_audio_stream(self):
         nb_channel = 2
+        #~ nb_channel = 1
         sample_rate = 44100.
         params = self.params_for_processing()
         dtype='float32'
         
-        self.processing = hls.InvCGC(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **params)
+        self.processing = hls.InvCGC(nb_channel=nb_channel, sample_rate=sample_rate,
+                dtype=dtype, apply_configuration_at_init=False, **params)
+                
+        self.processing.make_filters()
+        
+        self.processing.create_opencl_context(
+                gpu_platform_index = self.gpu_platform_index,
+                gpu_device_index = self.gpu_device_index,)
+        self.processing.initlalize_cl()
         
         self.index = 0
         def callback(indata, outdata, frames, time, status):
@@ -272,19 +282,19 @@ class MainWindow(QtGui.QWidget):
         else:
             params = self.params_for_processing()
             
-            print(params)
+            #~ print(params)
             t0 = time.perf_counter()
             self.processing.configure(**params)
             t1 = time.perf_counter()
-            print(t1-t0)
+            #~ print(t1-t0)
             self.processing.make_filters()
             t2 = time.perf_counter()
-            print(t2-t1)
+            #~ print(t2-t1)
             with self.mutex:        
                 self.processing.initlalize_cl()
             t3 = time.perf_counter()
-            print(t3-t2)
-            print(t3-t0)                
+            #~ print(t3-t2)
+            #~ print(t3-t0)                
             
                 #~ self.processing.online_configure(**params)
     
