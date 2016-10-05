@@ -82,24 +82,7 @@ class BasePyacqNode(BaseProcessingNode):
         self.debug_mode = self.params.get('debug_mode', False)
         
 
-    def online_configure(self, **params):
-        
-        self.params = params
-        self.debug_mode = self.params.get('debug_mode', False)
-        
-        print(params)
-        t0 = time.perf_counter()
-        self.processing.configure(**params)
-        t1 = time.perf_counter()
-        print(t1-t0)
-        self.processing.make_filters()
-        t2 = time.perf_counter()
-        print(t2-t1)
-        with self.mutex:        
-            self.processing.initlalize_cl()
-        t3 = time.perf_counter()
-        print(t3-t2)
-        print(t3-t0)
+
     
     def after_input_connect(self, inputname):
         BaseProcessingNode.after_input_connect(self, inputname)
@@ -157,6 +140,23 @@ from .invcgc import InvCGC
 class InvCGCNode(BasePyacqNode):
     _processing_class = InvCGC
 
-
+    def online_configure(self, **params):
+        
+        self.params = params
+        self.debug_mode = self.params.get('debug_mode', False)
+        
+        print(params)
+        t0 = time.perf_counter()
+        self.processing.configure(**params)
+        t1 = time.perf_counter()
+        print(t1-t0)
+        self.processing.make_filters()
+        t2 = time.perf_counter()
+        print(t2-t1)
+        with self.mutex:        
+            self.processing.initlalize_cl()
+        t3 = time.perf_counter()
+        print(t3-t2)
+        print(t3-t0)
     
 
