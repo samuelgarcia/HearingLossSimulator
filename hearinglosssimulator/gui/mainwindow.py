@@ -28,76 +28,43 @@ class Mutex(QtCore.QMutex):
         return self    
 
 
-
-
-class MainWindow(QtGui.QWidget):
+class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent = None):
-        QtGui.QWidget.__init__(self, parent)
+        QtGui.QMainWindow.__init__(self, parent)
+        
+        self.setWindowTitle(u'Hearing loss simulator')
+        #~ self.setWindowIcon(QtGui.QIcon(':/TODO.png'))
+        self.resize(800,600)
+        
+        self.createActions()
+        self.createToolBars()
+        
+        # central layout
+        w = QtGui.QWidget()
+        self.setCentralWidget(w)
         mainlayout  = QtGui.QVBoxLayout()
-        self.setLayout(mainlayout)
-        
-        self.resize(800,500)
-        
-        
-        
-        #~ mainlayout.addLayout(h)
-        #~ but = QtGui.QPushButton(u'Configure audio')
-        #~ h.addWidget(but)
-        #~ but.clicked.connect(self.open_audioDeviceSelection)
-        #~ but = QtGui.QPushButton(u'Configure GPU')
-        #~ h.addWidget(but)
-        #~ but.clicked.connect(self.open_gpuDeviceSelection)
-        #~ but = QtGui.QPushButton(u'Calibration')
-        #~ h.addWidget(but)
-        #~ but.clicked.connect(self.open_calibrationWidget)
-        
-        
-        
-        self.audioDeviceSelection = AudioDeviceSelection(parent=self)
-        self.gpuDeviceSelection = GpuDeviceSelection(parent=self)
-        self.calibrationWidget = Calibration(parent=self)
-        
-        self.dialogs = OrderedDict([ ('Configure audio', {'widget' :self.audioDeviceSelection}), 
-                                ('Configure GPU', {'widget' :self.gpuDeviceSelection}), 
-                                ('Calibration', {'widget' :self.calibrationWidget}) ])
-        
-        mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Configure</b>'))
-        h = QtGui.QHBoxLayout()
-        mainlayout.addLayout(h)
-        for name, attr in self.dialogs.items():
-            but = QtGui.QPushButton(name)
-            h.addWidget(but)
-            but.clicked.connect(self.open_dialog)
-            attr['but'] = but
-            attr['widget'].setWindowFlags(QtCore.Qt.Window)
-            attr['widget'].setWindowModality(QtCore.Qt.NonModal)
-            
-            attr['dia'] = dia = QtGui.QDialog()
-            layout  = QtGui.QVBoxLayout()
-            dia.setLayout(layout)
-            layout.addWidget(attr['widget'])
-            
+        w.setLayout(mainlayout)
         
         
         mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Start/Stop</b>'))
+        h = QtGui.QHBoxLayout()
+        mainlayout.addLayout(h)
+        
         self.but_compute_filters = QtGui.QPushButton(u'Computed filters')
         self.but_compute_filters.clicked.connect(self.compute_filters)
-        mainlayout.addWidget(self.but_compute_filters)
+        h.addWidget(self.but_compute_filters)
         
-        self.but_start_stop = QtGui.QPushButton(u'Start/Stop playback', checkable = True)
+        self.but_start_stop = QtGui.QPushButton(u'Start/Stop playback', checkable = True, enabled= False)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
-        self.but_start_stop.setEnabled(False)
         self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
-        mainlayout.addWidget(self.but_start_stop)
+        h.addWidget(self.but_start_stop)
 
-        self.but_enable_bypass = QtGui.QPushButton(u'Enable/bypass simulator', checkable = True)
+        self.but_enable_bypass = QtGui.QPushButton(u'Enable/bypass simulator', checkable = True, enabled=False)
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
-        self.but_enable_bypass.setEnabled(False)
-        mainlayout.addWidget(self.but_enable_bypass)
-        
-        mainlayout.addStretch()
+        h.addWidget(self.but_enable_bypass)
 
-        mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Setup loss on each ear/Stop</b>'))
+        
+        mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Setup loss on each ear</b>'))
         self.hearingLossParameter = HearingLossParameter()
         mainlayout.addWidget(self.hearingLossParameter)
 
@@ -123,6 +90,39 @@ class MainWindow(QtGui.QWidget):
         self.stream_done = False
         
         self.mutex = Mutex()
+
+    def createActions(self):
+        self.actions = OrderedDict()
+        
+        self.audioDeviceSelection = AudioDeviceSelection(parent=self)
+        self.gpuDeviceSelection = GpuDeviceSelection(parent=self)
+        self.calibrationWidget = Calibration(parent=self)
+        
+        self.dialogs = OrderedDict([ ('Configure audio', {'widget' :self.audioDeviceSelection}), 
+                                ('Configure GPU', {'widget' :self.gpuDeviceSelection}), 
+                                ('Calibration', {'widget' :self.calibrationWidget}) ])
+        
+        for name, attr in self.dialogs.items():
+            act = self.actions[name] = QtGui.QAction(name, self, checkable = False) #, icon =QtGui.QIcon(':/TODO.png'))
+            act.triggered.connect(self.open_dialog)
+            attr['action'] = act
+            attr['widget'].setWindowFlags(QtCore.Qt.Window)
+            attr['widget'].setWindowModality(QtCore.Qt.NonModal)
+            attr['dia'] = dia = QtGui.QDialog()
+            layout  = QtGui.QVBoxLayout()
+            dia.setLayout(layout)
+            layout.addWidget(attr['widget'])
+
+    def createToolBars(self):
+        self.toolbar = QtGui.QToolBar()
+        self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+        self.addToolBar(self.toolbar)
+        self.toolbar.setIconSize(QtCore.QSize(60, 40))
+        
+        for name, act in self.actions.items():
+            self.toolbar.addAction(act)
+
+
     
     def flash_icon(self):
         if self.running():
@@ -161,7 +161,7 @@ class MainWindow(QtGui.QWidget):
     
     def open_dialog(self):
         for name, attr in self.dialogs.items():
-            if attr['but']==self.sender(): break
+            if attr['action']==self.sender(): break
         
         attr['dia'].exec_()
         self.save_configuration()

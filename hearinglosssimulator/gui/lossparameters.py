@@ -65,26 +65,13 @@ def plot_hearingloss(ax, hearing_level, compression_loss):
         
         return lines
 
-class HearingLossParameter(QtGui.QWidget):
+
+class OneChannelHearingLossParameter(QtGui.QWidget):
     def __init__(self, parent = None):
         QtGui.QWidget.__init__(self, parent)
         mainlayout  = QtGui.QVBoxLayout()
         self.setLayout(mainlayout)
 
-
-        h = QtGui.QHBoxLayout()
-        mainlayout.addLayout(h)
-        h.addStretch()
-        self.combo_hearing_level_preset = QtGui.QComboBox()
-        h.addWidget(self.combo_hearing_level_preset)
-        self.combo_hearing_level_preset.addItems(hearing_level_preset.keys())
-        self.combo_hearing_level_preset.currentIndexChanged.connect(self.on_preset_changed)
-        self.combo_compression_loss_preset = QtGui.QComboBox()
-        h.addWidget(self.combo_compression_loss_preset)
-        self.combo_compression_loss_preset.addItems(compression_loss_preset.keys())
-        self.combo_compression_loss_preset.currentIndexChanged.connect(self.on_preset_changed)
-        
-        
         self.canvas = MplCanvas()
         mainlayout.addWidget(self.canvas)
         
@@ -107,9 +94,9 @@ class HearingLossParameter(QtGui.QWidget):
             
         h.addSpacerItem(QtGui.QSpacerItem(110,0))
 
-        self.hearing_level = hearing_level_preset['80 years']
+        self.hearing_level = hearing_level_preset['example 1']
         
-        self.compression_loss = compression_loss_preset['0%']
+        self.compression_loss = compression_loss_preset['100%']
         
         self.lines = plot_hearingloss(self.canvas.ax,  self.hearing_level, self.compression_loss)
         
@@ -122,12 +109,21 @@ class HearingLossParameter(QtGui.QWidget):
             self.all_interp1d_comp_to_loss[i] = scipy.interpolate.interp1d(comps, losses, kind='linear')
             
         self.refresh_spinbox()
+
+    def on_spinbox_changed(self, sender):
+        self.hearing_level = [ float(self.spin_hearinglevel[i].value()) for i in range(n)]
+        if sender in self.spin_comp_degree.values():
+            self.get_compression_loss()
+        
+        self.refresh_canvas()
+        self.refresh_spinbox()
     
     def refresh_canvas(self):
         x = np.arange(n)+.5
         compression_loss_clip = np.amin([self.hearing_level, self.compression_loss], axis=0)
         
         self.lines['hearing_level'].set_data(x, self.hearing_level)
+        self.lines['compression_loss'].set_data(x, self.compression_loss)
         self.lines['compression_loss_clip'].set_data(x, compression_loss_clip)
         
         self.canvas.draw()
@@ -145,23 +141,6 @@ class HearingLossParameter(QtGui.QWidget):
             s.setValue(float(np.round(self.compression_degree[i]*100.)))
             s.sigValueChanged.connect(self.on_spinbox_changed)
     
-    def on_preset_changed(self):
-        k = self.combo_hearing_level_preset.currentText()
-        self.hearing_level = hearing_level_preset[k]
-
-        k = self.combo_compression_loss_preset.currentText()
-        self.compression_loss = compression_loss_preset[k]
-        
-        self.refresh_canvas()
-        self.refresh_spinbox()
-    
-    def on_spinbox_changed(self, sender):
-        self.hearing_level = [ float(self.spin_hearinglevel[i].value()) for i in range(n)]
-        if sender in self.spin_comp_degree.values():
-            self.get_compression_loss()
-        
-        self.refresh_canvas()
-        self.refresh_spinbox()
         
     def get_compression_degree(self):
         compression_loss_clip = np.amin([self.hearing_level, self.compression_loss], axis=0)
@@ -174,12 +153,127 @@ class HearingLossParameter(QtGui.QWidget):
         for i in range(n):
             v = float(self.spin_comp_degree[i].value())/100.
             self.compression_loss[i] = self.all_interp1d_comp_to_loss[i](v)
+    
+    def set_compression_degree(self, compression_degree):
+        for i in range(n):
+            self.spin_comp_degree[i].setValue(compression_degree[i]*100.)
+    
+
+class HearingLossParameter(QtGui.QWidget):
+    def __init__(self, parent = None):
+        QtGui.QWidget.__init__(self, parent)
+        mainlayout  = QtGui.QVBoxLayout()
+        self.setLayout(mainlayout)
+
+
+        h = QtGui.QHBoxLayout()
+        mainlayout.addLayout(h)
+
+        self.tab = QtGui.QTabWidget()
+        h.addWidget(self.tab)
         
+        ears = ('left', 'right')
+        self.hl_params ={}
+        for ear in ears:
+            p = OneChannelHearingLossParameter()
+            self.hl_params[ear] = p
+            self.tab.addTab(p, ear)
+        
+        v = QtGui.QVBoxLayout()
+        h.addLayout(v)
+        
+        v.addWidget(QtGui.QLabel('Hear level presets:'))
+        self.combo_hearing_level_preset = QtGui.QComboBox()
+        v.addWidget(self.combo_hearing_level_preset)
+        self.combo_hearing_level_preset.addItems(hearing_level_preset.keys())
+        self.combo_hearing_level_preset.currentIndexChanged.connect(self.on_preset_changed)
+        v.addWidget(QtGui.QLabel('Compression presets:'))
+        self.combo_compression_loss_preset = QtGui.QComboBox()
+        v.addWidget(self.combo_compression_loss_preset)
+        self.combo_compression_loss_preset.addItems(compression_loss_preset.keys())
+        self.combo_compression_loss_preset.currentIndexChanged.connect(self.on_preset_changed)
+        v.addSpacing(30)
+        but = QtGui.QPushButton(u'Copy L>R')
+        v.addWidget(but)
+        but.clicked.connect(self.copy_l_to_r)
+        but = QtGui.QPushButton(u'Load')
+        v.addWidget(but)
+        but.clicked.connect(self.load)
+        but = QtGui.QPushButton(u'Save')
+        v.addWidget(but)
+        but.clicked.connect(self.save)
+        v.addStretch()
+
+
+
+        self.nb_channel = 2
+
+    def on_preset_changed(self):
+        for ear, p in self.hl_params.items():
+            k = self.combo_hearing_level_preset.currentText()
+            p.hearing_level = hearing_level_preset[k]
+
+            k = self.combo_compression_loss_preset.currentText()
+            p.compression_loss = compression_loss_preset[k]
+            
+            p.refresh_canvas()
+            p.refresh_spinbox()
+    
+    def set_nb_channel(self, n):
+        assert n in (1,2), 'only mono or stereo'
+        self.nb_channel = n
+        if n==1:
+            self.tab.setTabEnabled(1, False)
+            #~ self.hl_params[1].hide()
+        else:
+            self.tab.setTabEnabled(1, True)
+            #~ self.hl_params[1].show()
+
+    def set_configuration(self, **config):
+        for k, conf in config.items():
+            self.hl_params[k].hearing_level = conf['hearing_level']
+            self.hl_params[k].set_compression_degree(conf['compression_degree'])
+    
+    def get_configuration(self):
+        config = {}
+        for ear in ('left', 'right')[:self.nb_channel]:
+            config[ear] = {
+                        'freqs' : freqs,
+                        'hearing_level' : self.hl_params[ear].hearing_level,
+                        'compression_degree' : self.hl_params[ear].get_compression_degree(),
+                        }
+        return config
+
+    def copy_l_to_r(self):
+        self.hl_params['right'].hearing_level = self.hl_params['left'].hearing_level
+        self.hl_params['right'].compression_loss = self.hl_params['left'].compression_loss
+        self.hl_params['right'].refresh_canvas()
+        self.hl_params['right'].refresh_spinbox()
+
+    def load(self):
+        fd = QtGui.QFileDialog(fileMode= QtGui.QFileDialog.ExistingFile, acceptMode = QtGui.QFileDialog.AcceptOpen)
+        fd.setNameFilters(['Hearingloss setup (*.json)', 'All (*)'])
+        fd.setViewMode( QtGui.QFileDialog.Detail )
+        if fd.exec_():
+            filename = fd.selectedFiles()[0]
+            config = json.load(open(filename, 'r', encoding='utf8'))
+            self.set_configuration(**config)
+
+    def save(self):
+        fd = QtGui.QFileDialog(fileMode= QtGui.QFileDialog.AnyFile, acceptMode = QtGui.QFileDialog.AcceptSave, defaultSuffix = 'json')
+        fd.setNameFilter('Hearingloss setup (*.json)')
+        if fd.exec_():
+            filename = fd.selectedFiles()[0]
+            json.dump(self.get_configuration(),open(filename, 'w', encoding='utf8'), indent=4, separators=(',', ': '))
+
 
 
 if __name__ == '__main__':
     app = pg.mkQApp()
     win = HearingLossParameter()
+    #~ win.set_nb_channel(1)
+    win.set_nb_channel(2)
     win.show()
     app.exec_()
+    print(win.get_configuration())
 

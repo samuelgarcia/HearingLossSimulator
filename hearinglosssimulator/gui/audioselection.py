@@ -44,7 +44,7 @@ class AudioDeviceSelection(QtGui.QWidget):
         
         self.resfresh_device_list()
 
-    def set_configuration(self, device='default', gain = -15., duration = 2., freq = 1000.):
+    def set_configuration(self, input_device='default', output_device='default', gain = -15., duration = 2., freq = 1000.):
         try: self.comboin.setCurrentIndex(self.map_devicename_to_item['input'][input_device])
         except: pass
         try: self.comboout.setCurrentIndex(self.map_devicename_to_item['output'][output_device])
