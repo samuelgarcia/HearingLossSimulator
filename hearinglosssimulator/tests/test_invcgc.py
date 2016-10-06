@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import scipy.signal
 import matplotlib.pyplot as plt
+from matplotlib.cm import get_cmap
 
 import hearinglosssimulator as hls
 import helper

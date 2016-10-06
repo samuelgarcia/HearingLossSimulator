@@ -188,6 +188,8 @@ class InvCGC:
         # check this
         fft_freqs = w/np.pi*(self.sample_rate/2.)
         all = all[(fft_freqs>self.freqs[0]) & (fft_freqs<self.freqs[-1])]
+        #TODO remove first and last band global gain!!!!
+         
         self.dbgain_final = -np.mean(20*np.log10(all))
         self.gain_final = 10**(self.dbgain_final/20.)
         

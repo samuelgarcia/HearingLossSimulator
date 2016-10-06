@@ -34,7 +34,7 @@ class MainWindow(QtGui.QMainWindow):
         
         self.setWindowTitle(u'Hearing loss simulator')
         #~ self.setWindowIcon(QtGui.QIcon(':/TODO.png'))
-        self.resize(800,600)
+        self.resize(1000,800)
         
         self.createActions()
         self.createToolBars()
