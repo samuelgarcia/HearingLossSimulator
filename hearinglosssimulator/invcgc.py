@@ -15,9 +15,10 @@ mf = pyopencl.mem_flags
 
 import pyacq
 
-from .filterfactory import (gammatone, asymmetric_compensation_coeffs, loggammachirp, erbspace)
-from .tools import sosfreqz
-
+#~ from .filterfactory import (gammatone, asymmetric_compensation_coeffs, loggammachirp, erbspace)
+#~ from .tools import sosfreqz
+from .filterfactory import (erbspace)
+from .cgcfilter import make_cgc_filter
 
 
 """
@@ -105,10 +106,38 @@ class InvCGC:
         
         self.bypass = bypass
         self.debug_mode = debug_mode
+    
+    
+    def make_filters(self):
+        self.total_channel = self.nb_freq_band*self.nb_channel
+        self.freqs = erbspace(self.low_freq,self.hight_freq, self.nb_freq_band)
         
+        
+        #TODO : this is for debug only
+        compression_degree = [0.] * len(self.freqs)
+        
+        self.coefficients_pgc = [None]*self.nb_channel
+        self.coefficients_hpaf = [None]*self.nb_channel
+        for c in range(self.nb_channel):
+            self.coefficients_pgc[c], self.coefficients_hpaf[c], levels, band_overlap_gain = make_cgc_filter(self.freqs, compression_degree,
+                                        self.level_max, self.level_step, self.sample_rate, dtype=self.dtype)
+        self.coefficients_pgc = np.concatenate(self.coefficients_pgc, axis =0)
+        self.coefficients_hpaf = np.concatenate(self.self.coefficients_hpaf, axis =0)
+        
+        self.band_overlap_gain = band_overlap_gain
+        self.levels = levels
+        
+        
+        # make decays per band
+        samedecay = np.exp(-2./self.tau_level/self.sample_rate)
+        # same decay for all band
+        self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
+        # one decay per band (for testing)
+        #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
+
         
 
-    def make_filters(self):
+    def make_filters_old(self):
         
         if len(self.loss_weigth) ==1 and self.nb_channel!=1:
             self.loss_weigth = self.loss_weigth*self.nb_channel
@@ -190,11 +219,11 @@ class InvCGC:
         all = all[(fft_freqs>self.freqs[0]) & (fft_freqs<self.freqs[-1])]
         #TODO remove first and last band global gain!!!!
          
-        self.dbgain_final = -np.mean(20*np.log10(all))
-        self.gain_final = 10**(self.dbgain_final/20.)
+        self.band_overlap_gain_db = -np.mean(20*np.log10(all))
+        self.band_overlap_gain = 10**(self.band_overlap_gain_db/20.)
         
         if self.debug_mode:
-            print('dbgain_final', self.dbgain_final)
+            print('band_overlap_gain_db', self.band_overlap_gain_db)
         
         
         # make decays per band
@@ -397,7 +426,7 @@ class InvCGC:
                 out_buffer[chan, :] = np.sum(out_pgc2_short[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
             
             #gain
-            out_buffer *= self.gain_final
+            out_buffer *= self.band_overlap_gain
             
         
 

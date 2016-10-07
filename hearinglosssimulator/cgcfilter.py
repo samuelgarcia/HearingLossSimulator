@@ -28,24 +28,6 @@ def make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rat
     
     nb_freq_band = len(freqs)
     
-    #~ if len(loss_weigth) ==1 and nb_channel!=1:
-        #~ loss_weigth = loss_weigth*nb_channel
-    
-    #~ assert len(loss_weigth) == nb_channel, 'The nb_channel given in loss_weight is not nb_channel {} {}'.format(len(loss_weigth), nb_channel)
-    
-    #~ total_channel = nb_freq_band*nb_channel
-    #~ freqs = erbspace(low_freq,hight_freq, nb_freq_band)
-    
-    # compute losses at ERB freq
-    #~ losses = [ ]
-    #~ for c in range(nb_channel):
-        #~ lw = loss_weigth[c]
-        #~ lw = [(0,0)]+lw + [(sample_rate/2, 0.)]
-        #~ loss_freq, loss_db = np.array(lw).T
-        #~ interp = scipy.interpolate.interp1d(loss_freq, loss_db)
-        #~ losses.append(interp(freqs))
-    #~ losses = np.array(losses)
-    
     # pgc filter coefficient
     b1 = 1.81
     c1 = -2.96
@@ -77,23 +59,24 @@ def make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rat
         
     alpha = compression_degree
     
-    frat0 = 0.466
-    frat1 = 0.0109
-    frat1r = 0.016
-    Pcr = 65.
-    frat0r = frat0 + (frat1 - frat1r)*Pcr
+    # Toshio Irino coefficient (if this is correct)
+    # need to be check with irino
+    frat0r = 1 + 0.466 * (1-alpha)
+    frat1r =  - 0.0109 * (1-alpha)
     
-    print(frat0r)
-    print(frat1r)
+    # Samuel Garcia coefficient 2015
+    #~ w = (1-alpha) * 5 / 3
+    #~ frat1r = -w/65/2.
+    #~ frat0r = 1+w/2.
+
+    # Samuel Garcia coefficient 2016
+    #~ frat0r = 1 + (1-alpha)*1.3333
+    #~ frat1r = - (1-alpha) * 0.0205
+    
     for l, level in enumerate(levels):
-        frat = frat0r +(1-alpha) * frat1r * level # minus for inverse compression = moving left
-        
+        # minus for inverse compression = moving left
+        frat = frat0r + frat1r * level
         freqs2 = freqs*frat
-        print()
-        print(level)
-        print(freq)
-        print(frat)
-        print(freqs2)
         coefficients_hpaf[:, l, : , : ] = asymmetric_compensation_coeffs(freqs2, sample_rate, b2,c2,p0,p1,p2,p3,p4)
     
     #noramlize for highest level
@@ -117,10 +100,11 @@ def make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rat
     # this is bad because of side effect
     #dbgain_final = -np.mean(20*np.log10(all))
     
-    dbgain_final = -np.max(20*np.log10(all))
+    band_overlap_gain_db = -np.max(20*np.log10(all))
     
-    gain_final = 10**(dbgain_final/20.)
+    band_overlap_gain = 10**(band_overlap_gain_db/20.)
     
-    print('dbgain_final', dbgain_final)
+    print('band_overlap_gain_db', band_overlap_gain_db)
     
-    return coefficients_pgc, coefficients_hpaf, levels
+    return coefficients_pgc, coefficients_hpaf, levels, band_overlap_gain
+

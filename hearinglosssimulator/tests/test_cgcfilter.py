@@ -12,18 +12,19 @@ def test_cgc_filter():
     #~ freqs = hls.erbspace(80.,15000., 16.)
     
     #~ compression_degree = [1]
+    #~ compression_degree = [0.25]
     compression_degree = [0]
     level_max = 100.
     level_step = 10.
     sample_rate = 44100.
-    coefficients_pgc, coefficients_hpaf, levels = hls.make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rate)
-    
+    coefficients_pgc, coefficients_hpaf, levels, band_overlap_gain = hls.make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rate)
     
     fig, ax1 = plt.subplots()
     fig, ax2 = plt.subplots()
     fig, ax3 = plt.subplots()
     
     levels_colors = [ get_cmap('jet', len(levels))(l) for l, level in enumerate(levels) ]
+    freqs_colors = [ get_cmap('jet', len(freqs))(f) for f, freq in enumerate(freqs) ]
     
     for f, freq in enumerate(freqs):
         gains = np.zeros(len(levels))
@@ -37,17 +38,25 @@ def test_cgc_filter():
             
             hls.plot_filter(all_filter, ax2, sample_rate, color=levels_colors[l])
             hls.plot_filter(coefficients_hpaf[f,l,:,:], ax3, sample_rate, color=levels_colors[l])
-            
-        ax1.plot(levels, levels+gains, label='{:0.1f}'.format(freq))
-        ax1.plot(levels,levels, color='r', ls='--')
+        
+        hls.plot_filter(coefficients_pgc[f,:,:], ax3, sample_rate, color='k')
+        ax3.axvline(freq, color='k')
+        ax2.axvline(freq, color='k')
+        
+        ax1.plot(levels, levels+gains, label='{:0.1f}'.format(freq), color=freqs_colors[f])
+    ax1.plot(levels,levels, color='r', ls='--')
         
         
-    ax3.legend()
+    ax1.legend()
+    ax2.set_ylim(-50,50)
+    ax3.set_ylim(-50,50)
     
     plt.show()
-    
-    
+
+
+
     
     
 if __name__ == '__main__':
     test_cgc_filter()
+    
