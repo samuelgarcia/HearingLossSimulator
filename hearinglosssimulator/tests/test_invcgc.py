@@ -36,8 +36,9 @@ def test_invcgc():
     #~ print(in_buffer.shape)
     #~ exit()
     
-    loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel
-    processing_conf = dict(nb_freq_band=32, level_step=4, loss_weigth=loss_weigth, 
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params['right'] = loss_params['left']
+    processing_conf = dict(nb_freq_band=32, level_step=4, loss_params=loss_params, 
                 debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
     processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
@@ -69,7 +70,10 @@ def test_pgc1():
     in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params['right'] = loss_params['left']
+
+    processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
     processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     n = processing.nb_freq_band
@@ -103,7 +107,10 @@ def test_levels():
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params['right'] = loss_params['left']
+    
+    processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
     processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     freq_band = 2
@@ -148,9 +155,13 @@ def test_hpaf():
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    processing_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params['right'] = loss_params['left']
+    
+    processing_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
     processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
+    #~ assert len(processing.levels)==1
     freq_band = 2
     
     online_pgc1 = online_arrs['pgc1']
@@ -185,8 +196,12 @@ def test_pgc2():
     in_buffer = hls.whitenoise(length, sample_rate=sample_rate,)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params['right'] = loss_params['left']
+    
     processing_conf = dict(nb_freq_band=32, level_max=120, level_step=1, debug_mode=True, 
                 low_freq = 60., hight_freq = 15000.,
+                loss_params = loss_params,
                 chunksize=chunksize, backward_chunksize=backward_chunksize)
     processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     

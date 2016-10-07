@@ -85,7 +85,8 @@ class InvCGC:
     def configure(self, nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
                 tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
                 calibration =  93.979400086720375,
-                loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
+                loss_params = {},
+                #~ loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
                 chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False, **kargs):
         
         
@@ -97,7 +98,8 @@ class InvCGC:
         self.level_step = level_step
         self.level_max = level_max
         self.calibration = calibration
-        self.loss_weigth = loss_weigth
+        #~ self.loss_weigth = loss_weigth
+        self.loss_params = loss_params
         self.chunksize = chunksize
         self.backward_chunksize = backward_chunksize
         
@@ -112,17 +114,32 @@ class InvCGC:
         self.total_channel = self.nb_freq_band*self.nb_channel
         self.freqs = erbspace(self.low_freq,self.hight_freq, self.nb_freq_band)
         
+        channels = ('left', 'right')[:self.nb_channel]
+        # interpolate compression_degree and passive_loss
+        compresison_degree_all = {}
+        passive_loss_all = {}
+        for c, chan in enumerate(channels):
+            cg = self.loss_params[chan]['compression_degree']
+            interp = scipy.interpolate.interp1d(self.loss_params[chan]['freqs'], cg, bounds_error=False, fill_value=(cg[0], cg[-1]))
+            compresison_degree_all[chan] = interp(self.freqs)
+
+            pl = self.loss_params[chan]['compression_degree']
+            interp = scipy.interpolate.interp1d(self.loss_params[chan]['freqs'], pl, bounds_error=False, fill_value=(pl[0], pl[-1]))
+            passive_loss_all[chan] = interp(self.freqs)
+        print(self.freqs)
+        print(compresison_degree_all)
+        print(passive_loss_all)
         
         #TODO : this is for debug only
         compression_degree = [0.] * len(self.freqs)
         
         self.coefficients_pgc = [None]*self.nb_channel
         self.coefficients_hpaf = [None]*self.nb_channel
-        for c in range(self.nb_channel):
-            self.coefficients_pgc[c], self.coefficients_hpaf[c], levels, band_overlap_gain = make_cgc_filter(self.freqs, compression_degree,
+        for c, chan in enumerate(channels):
+            self.coefficients_pgc[c], self.coefficients_hpaf[c], levels, band_overlap_gain = make_cgc_filter(self.freqs, compresison_degree_all[chan],
                                         self.level_max, self.level_step, self.sample_rate, dtype=self.dtype)
         self.coefficients_pgc = np.concatenate(self.coefficients_pgc, axis =0)
-        self.coefficients_hpaf = np.concatenate(self.self.coefficients_hpaf, axis =0)
+        self.coefficients_hpaf = np.concatenate(self.coefficients_hpaf, axis =0)
         
         self.band_overlap_gain = band_overlap_gain
         self.levels = levels
@@ -136,7 +153,7 @@ class InvCGC:
         #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
 
         
-
+    """
     def make_filters_old(self):
         
         if len(self.loss_weigth) ==1 and self.nb_channel!=1:
@@ -160,8 +177,6 @@ class InvCGC:
         # pgc filter coefficient
         b1 = 1.81
         c1 = -2.96
-        #~ b1 = 1.019
-        #~ c1 = 1. 
         b2 = 2.17
         c2 = 2.2
         
@@ -231,8 +246,7 @@ class InvCGC:
         # same decay for all band
         self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
         # one decay per band (for testing)
-        #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
-
+    """
 
     def initlalize_cl(self):
 

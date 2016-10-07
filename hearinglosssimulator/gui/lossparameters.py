@@ -95,8 +95,9 @@ class OneChannelHearingLossParameter(QtGui.QWidget):
         h.addSpacerItem(QtGui.QSpacerItem(110,0))
 
         self.hearing_level = hearing_level_preset['example 1']
-        
         self.compression_loss = compression_loss_preset['100%']
+        self.compression_loss_clip = np.amin([self.hearing_level, self.compression_loss], axis=0)
+        
         
         self.lines = plot_hearingloss(self.canvas.ax,  self.hearing_level, self.compression_loss)
         
@@ -120,12 +121,9 @@ class OneChannelHearingLossParameter(QtGui.QWidget):
     
     def refresh_canvas(self):
         x = np.arange(n)+.5
-        compression_loss_clip = np.amin([self.hearing_level, self.compression_loss], axis=0)
-        
         self.lines['hearing_level'].set_data(x, self.hearing_level)
         self.lines['compression_loss'].set_data(x, self.compression_loss)
-        self.lines['compression_loss_clip'].set_data(x, compression_loss_clip)
-        
+        self.lines['compression_loss_clip'].set_data(x, self.compression_loss_clip)
         self.canvas.draw()
     
     def refresh_spinbox(self):
@@ -143,20 +141,34 @@ class OneChannelHearingLossParameter(QtGui.QWidget):
     
         
     def get_compression_degree(self):
-        compression_loss_clip = np.amin([self.hearing_level, self.compression_loss], axis=0)
+        self.compression_degree_clip = []
         self.compression_degree = []
         for i in range(n):
-            self.compression_degree.append(float(self.all_interp1d_loss_to_comp[i](compression_loss_clip[i])))
-        return self.compression_degree
+            self.compression_degree_clip.append(float(self.all_interp1d_loss_to_comp[i](self.compression_loss_clip[i])))
+            self.compression_degree.append(float(self.all_interp1d_loss_to_comp[i](self.compression_loss[i])))
+            
+        return self.compression_degree_clip
     
     def get_compression_loss(self):
         for i in range(n):
             v = float(self.spin_comp_degree[i].value())/100.
             self.compression_loss[i] = self.all_interp1d_comp_to_loss[i](v)
-    
+        self.compression_loss_clip = np.amin([self.hearing_level, self.compression_loss], axis=0)
+        
     def set_compression_degree(self, compression_degree):
         for i in range(n):
             self.spin_comp_degree[i].setValue(compression_degree[i]*100.)
+    
+    def get_passive_loss(self):
+        passive_loss = np.array(self.hearing_level) - self.compression_loss_clip
+        return passive_loss.tolist()
+    
+    def set_passive_loss(self, passive_loss):
+        self.hearing_level = (np.array(self.compression_loss) + np.array(passive_loss)).tolist()
+        self.refresh_canvas()
+        self.refresh_spinbox()
+        
+        
     
 
 class HearingLossParameter(QtGui.QWidget):
@@ -211,7 +223,7 @@ class HearingLossParameter(QtGui.QWidget):
     def on_preset_hl_changed(self):
         for ear, p in self.hl_params.items():
             k = self.combo_hearing_level_preset.currentText()
-            p.hearing_level = hearing_level_preset[k]
+            p.hearing_level = list(hearing_level_preset[k])
 
             p.refresh_canvas()
             p.refresh_spinbox()
@@ -219,7 +231,9 @@ class HearingLossParameter(QtGui.QWidget):
     def on_preset_comp_changed(self):
         for ear, p in self.hl_params.items():
             k = self.combo_compression_loss_preset.currentText()
-            p.compression_loss = compression_loss_preset[k]
+            p.compression_loss = list(compression_loss_preset[k])
+            p.compression_loss_clip = np.amin([p.hearing_level, p.compression_loss], axis=0)
+            
             
             p.refresh_canvas()
             p.refresh_spinbox()
@@ -236,16 +250,16 @@ class HearingLossParameter(QtGui.QWidget):
 
     def set_configuration(self, **config):
         for k, conf in config.items():
-            self.hl_params[k].hearing_level = conf['hearing_level']
             self.hl_params[k].set_compression_degree(conf['compression_degree'])
+            self.hl_params[k].set_passive_loss(conf['passive_loss'])
     
     def get_configuration(self):
         config = {}
         for ear in ('left', 'right')[:self.nb_channel]:
             config[ear] = {
                         'freqs' : freqs,
-                        'hearing_level' : self.hl_params[ear].hearing_level,
-                        'compression_degree' : self.hl_params[ear].get_compression_degree(),
+                        'passive_loss' : self.hl_params[ear].get_passive_loss(),
+                        'compression_degree' : self.hl_params[ear].compression_degree_clip,
                         }
         return config
 

@@ -212,16 +212,14 @@ class MainWindow(QtGui.QMainWindow):
         backward_chunksize = chunksize * 2
         
         calibration = self.calibrationWidget.get_configuration()['spl_calibration_at_zero_dbfs']
-        loss_weigth_dict = self.hearingLossParameter.get_configuration()['loss_weigth']
-        loss_weigth = [[(e['freq'], e['db_loss']) for e in l ] for l in loss_weigth_dict ]
-        
+        loss_params = self.hearingLossParameter.get_configuration()
 
         params = dict(
                 #~ nb_freq_band=32, low_freq = 80., hight_freq = 20000.,
                 nb_freq_band=10, low_freq = 80., hight_freq = 15000.,
                 tau_level = 0.005, level_step =1., level_max = 120.,
                 calibration =  calibration,
-                loss_weigth = loss_weigth,
+                loss_params = loss_params,
                 chunksize=chunksize, backward_chunksize=backward_chunksize,
                 
                 debug_mode=False,
