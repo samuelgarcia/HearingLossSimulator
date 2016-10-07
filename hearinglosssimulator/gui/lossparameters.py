@@ -186,12 +186,12 @@ class HearingLossParameter(QtGui.QWidget):
         self.combo_hearing_level_preset = QtGui.QComboBox()
         v.addWidget(self.combo_hearing_level_preset)
         self.combo_hearing_level_preset.addItems(hearing_level_preset.keys())
-        self.combo_hearing_level_preset.currentIndexChanged.connect(self.on_preset_changed)
+        self.combo_hearing_level_preset.currentIndexChanged.connect(self.on_preset_hl_changed)
         v.addWidget(QtGui.QLabel('Compression presets:'))
         self.combo_compression_loss_preset = QtGui.QComboBox()
         v.addWidget(self.combo_compression_loss_preset)
         self.combo_compression_loss_preset.addItems(compression_loss_preset.keys())
-        self.combo_compression_loss_preset.currentIndexChanged.connect(self.on_preset_changed)
+        self.combo_compression_loss_preset.currentIndexChanged.connect(self.on_preset_comp_changed)
         v.addSpacing(30)
         but = QtGui.QPushButton(u'Copy L>R')
         v.addWidget(but)
@@ -208,11 +208,16 @@ class HearingLossParameter(QtGui.QWidget):
 
         self.nb_channel = 2
 
-    def on_preset_changed(self):
+    def on_preset_hl_changed(self):
         for ear, p in self.hl_params.items():
             k = self.combo_hearing_level_preset.currentText()
             p.hearing_level = hearing_level_preset[k]
 
+            p.refresh_canvas()
+            p.refresh_spinbox()
+
+    def on_preset_comp_changed(self):
+        for ear, p in self.hl_params.items():
             k = self.combo_compression_loss_preset.currentText()
             p.compression_loss = compression_loss_preset[k]
             
