@@ -50,8 +50,6 @@ class InvCGC:
     calibration: equivalent dbSPL for 0dBFs. 0dBFs is one sinus of amplitude 1
                     default is 93.979400086720375 dBSPL is equivalent when amplitude is directly the pressure
                     so 0dbSPL is 2e-5Pa
-    loss_weigth: a list (size nb_channel) of list (size nb loss measurement) of pair (freq, loss_db)
-        Example 1 channel: [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]
     
     
     """    
@@ -86,7 +84,6 @@ class InvCGC:
                 tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
                 calibration =  93.979400086720375,
                 loss_params = {},
-                #~ loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]],
                 chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False, **kargs):
         
         
@@ -117,18 +114,28 @@ class InvCGC:
         channels = ('left', 'right')[:self.nb_channel]
         # interpolate compression_degree and passive_loss
         compresison_degree_all = {}
-        passive_loss_all = {}
+        passive_loss_db_all = {}
+        self.passive_gain = []
         for c, chan in enumerate(channels):
             cg = self.loss_params[chan]['compression_degree']
             interp = scipy.interpolate.interp1d(self.loss_params[chan]['freqs'], cg, bounds_error=False, fill_value=(cg[0], cg[-1]))
             compresison_degree_all[chan] = interp(self.freqs)
 
-            pl = self.loss_params[chan]['compression_degree']
+            pl = self.loss_params[chan]['passive_loss_db']
             interp = scipy.interpolate.interp1d(self.loss_params[chan]['freqs'], pl, bounds_error=False, fill_value=(pl[0], pl[-1]))
-            passive_loss_all[chan] = interp(self.freqs)
-        print(self.freqs)
-        print(compresison_degree_all)
-        print(passive_loss_all)
+            passive_loss_db_all[chan] = interp(self.freqs)
+            
+            self.passive_gain.extend(10**(passive_loss_db_all[chan]/20.))
+            
+        #~ print(self.freqs)
+        #~ print(compresison_degree_all)
+        #~ print(passive_loss_db_all)
+        
+        self.passive_gain = np.array(self.passive_gain, dtype=self.dtype)[:, None]
+        #~ print(self.passive_gain)
+        #~ exit()
+        
+        
         
         #TODO : this is for debug only
         compression_degree = [0.] * len(self.freqs)
@@ -138,6 +145,7 @@ class InvCGC:
         for c, chan in enumerate(channels):
             self.coefficients_pgc[c], self.coefficients_hpaf[c], levels, band_overlap_gain = make_cgc_filter(self.freqs, compresison_degree_all[chan],
                                         self.level_max, self.level_step, self.sample_rate, dtype=self.dtype)
+            print(chan, 'band_overlap_gain', band_overlap_gain)
         self.coefficients_pgc = np.concatenate(self.coefficients_pgc, axis =0)
         self.coefficients_hpaf = np.concatenate(self.coefficients_hpaf, axis =0)
         
@@ -151,103 +159,7 @@ class InvCGC:
         self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
         # one decay per band (for testing)
         #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
-
-        
-    """
-    def make_filters_old(self):
-        
-        if len(self.loss_weigth) ==1 and self.nb_channel!=1:
-            self.loss_weigth = self.loss_weigth*self.nb_channel
-        
-        assert len(self.loss_weigth) == self.nb_channel, 'The nb_channel given in loss_weight is not nb_channel {} {}'.format(len(self.loss_weigth), self.nb_channel)
-        
-        self.total_channel = self.nb_freq_band*self.nb_channel
-        self.freqs = erbspace(self.low_freq,self.hight_freq, self.nb_freq_band)
-        
-        # compute losses at ERB freq
-        self.losses = [ ]
-        for c in range(self.nb_channel):
-            lw = self.loss_weigth[c]
-            lw = [(0,0)]+lw + [(self.sample_rate/2, 0.)]
-            loss_freq, loss_db = np.array(lw).T
-            interp = scipy.interpolate.interp1d(loss_freq, loss_db)
-            self.losses.append(interp(self.freqs))
-        self.losses = np.array(self.losses)
-        
-        # pgc filter coefficient
-        b1 = 1.81
-        c1 = -2.96
-        b2 = 2.17
-        c2 = 2.2
-        
-        p0=2
-        p1=1.7818*(1-0.0791*b2)*(1-0.1655*abs(c2))
-        p2=0.5689*(1-0.1620*b2)*(1-0.0857*abs(c2))
-        p3=0.2523*(1-0.0244*b2)*(1+0.0574*abs(c2))
-        p4=1.0724
-
-        pgcfilters_1ch = loggammachirp(self.freqs, self.sample_rate, b=b1, c=c1).astype(self.dtype)
-        
-        #noramlize PGC to 0 db at maximum 
-        for f, freq in enumerate(self.freqs):
-            w, h = sosfreqz(pgcfilters_1ch[f,:,:], worN =2**16,)
-            gain = np.max(np.abs(h))
-            pgcfilters_1ch[f,0, :3] /= gain
-        
-        self.coefficients_pgc = np.concatenate([pgcfilters_1ch]*self.nb_channel, axis =0)
-
-        # Construct hpaf filters : pre compute for all sound levels for each freq
-        self.levels = np.arange(0, self.level_max,self.level_step)
-        nlevel = self.levels.size
-        
-        # construct hpaf depending on loss
-        self.coefficients_hpaf = np.zeros((self.nb_channel*self.nb_freq_band, len(self.levels), 4, 6), dtype = self.dtype)
-        for c in range(self.nb_channel):
-            w = -self.losses[c,:]/30.
-            frat1r = -w/65/2.
-            frat0r = 1+w/2.
-            for l, level in enumerate(self.levels):
-                frat = frat0r + frat1r*level
-                freqs2 = self.freqs*frat
-                self.coefficients_hpaf[c*self.nb_freq_band:(c+1)*self.nb_freq_band , l, : , : ] = asymmetric_compensation_coeffs(freqs2, self.sample_rate, b2,c2,p0,p1,p2,p3,p4)
-        
-        NFFT = 2**16
-        
-        #noramlize for highest level
-        for c in range(self.nb_channel):
-            for f, freq in enumerate(self.freqs):
-                #~ filter = np.concatenate([pgcfilters_1ch[f,:,:], self.coefficients_hpaf[c*self.nb_freq_band+f , -1, : , : ], ], axis = 0)
-                filter = np.concatenate([pgcfilters_1ch[f,:,:], self.coefficients_hpaf[c*self.nb_freq_band+f , -1, : , : ],pgcfilters_1ch[f,:,:] ], axis = 0)
-                w, h = sosfreqz(filter, worN =NFFT)
-                gain = np.max(np.abs(h))
-                self.coefficients_hpaf[c*self.nb_freq_band+f , :, 0 , :3 ] /= gain
-        
-        # compensate final gain for sum
-        all = np.zeros(NFFT)
-        for f, freq in enumerate(self.freqs):
-            all_filter = np.concatenate([self.coefficients_pgc[f,:,:],self.coefficients_hpaf[f,-1,:,:], self.coefficients_pgc[f,:,:]], axis = 0)
-            w, h = sosfreqz(all_filter,worN = NFFT)
-            all += np.abs(h) 
-        
-        # check this
-        fft_freqs = w/np.pi*(self.sample_rate/2.)
-        all = all[(fft_freqs>self.freqs[0]) & (fft_freqs<self.freqs[-1])]
-        #TODO remove first and last band global gain!!!!
-         
-        self.band_overlap_gain_db = -np.mean(20*np.log10(all))
-        self.band_overlap_gain = 10**(self.band_overlap_gain_db/20.)
-        
-        if self.debug_mode:
-            print('band_overlap_gain_db', self.band_overlap_gain_db)
-        
-        
-        # make decays per band
-        samedecay = np.exp(-2./self.tau_level/self.sample_rate)
-        # same decay for all band
-        self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
-        # one decay per band (for testing)
-    """
-
+    
     def initlalize_cl(self):
 
         #~ if not hasattr(self, 'coefficients_pgc'):
@@ -274,6 +186,9 @@ class InvCGC:
         
         self.out_pgc2 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_pgc2 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
+        
+        self.out_passive = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
+        
         #set initial state to minimize initiale state
         #~ for chan in range(self.total_channel):
             #~ for section in range(self.coefficients_pgc.shape[1]):
@@ -281,7 +196,7 @@ class InvCGC:
                 #~ b, a = coeff[:3], coeff[3:]
                 #~ zi = scipy.signal.lfilter_zi(b, a)
                 #~ self.zi_pgc2[chan, section, :] = zi[::-1]
-                
+        
         
         
         #GPU buffers
@@ -304,6 +219,9 @@ class InvCGC:
         
         self.out_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_pgc2)
         self.zi_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_pgc2)
+        
+        self.passive_gain_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.passive_gain.flatten().copy())
+        self.out_passive_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_passive)
         
         
         # compialtion
@@ -404,6 +322,7 @@ class InvCGC:
         if pos2<=0:
             if self.debug_mode:
                 returns['pgc2'] = (None, None)
+                returns['passive'] = (None, None)
             
             returns['main_output'] = (None, None)
             return returns
@@ -425,22 +344,41 @@ class InvCGC:
                 event.wait()
             
             
-            pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
-            out_pgc2_short = self.out_pgc2
-
             if self.debug_mode:
-                #~ self.outputs['pgc2'].send(self.out_pgc2.T, index=pos2)
+                #~ pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
                 returns['pgc2'] = (pos2, self.out_pgc2.T)
+            
+            # passive gain by band
+            # on very basic benchùark numpy is faster than opencl!!!
+            pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
+            self.out_passive = self.out_pgc2 * self.passive_gain # NUMPY VERSION
+            
+            #~ mwgs = self.ctx.devices[0].get_info(pyopencl.device_info.MAX_WORK_GROUP_SIZE)
+            #~ global_size = (self.total_channel, self.chunksize, )
+            #~ local_size = (1, mwgs, )
+            #~ event = self.opencl_prg.bychannel_gain(self.queue, global_size, local_size,
+                                        #~ self.out_pgc2_cl, self.out_passive_cl, self.passive_gain_cl)
+            
+            #~ event.wait()
+            #~ pyopencl.enqueue_copy(self.queue,  self.out_passive, self.out_passive_cl)
+            
+            if self.debug_mode:
+                returns['passive'] = (pos2, self.out_passive.T)
+            
             
             out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
             
             # sum by channel block
             
             for chan in range(self.nb_channel):
-                out_buffer[chan, :] = np.sum(out_pgc2_short[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
+                #~ out_buffer[chan, :] = np.sum(self.out_pgc2[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
+                out_buffer[chan, :] = np.sum(self.out_passive[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
             
-            #gain
+            #compensate band_overlap_gain
             out_buffer *= self.band_overlap_gain
+            
+
+            
             
         
 

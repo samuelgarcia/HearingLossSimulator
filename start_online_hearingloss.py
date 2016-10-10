@@ -1,3 +1,4 @@
+import PyQt5 # this force pyqtgraph to deal with Qt5
 from hearinglosssimulator.gui.mainwindow import MainWindow
 import pyqtgraph as pg
 

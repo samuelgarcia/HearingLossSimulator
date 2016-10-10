@@ -10,8 +10,8 @@ import helper
 
 #~ exit()
 
-#~ nb_channel = 2
-nb_channel = 1
+nb_channel = 2
+#~ nb_channel = 1
 
 sample_rate =44100.
 
@@ -36,7 +36,7 @@ def test_invcgc():
     #~ print(in_buffer.shape)
     #~ exit()
     
-    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
     loss_params['right'] = loss_params['left']
     processing_conf = dict(nb_freq_band=32, level_step=4, loss_params=loss_params, 
                 debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
@@ -47,10 +47,10 @@ def test_invcgc():
     
     freq_band = 15
     
-    fig, ax = plt.subplots(nrows = 6, sharex=True) #, sharey=True)
+    fig, ax = plt.subplots(nrows = 7, sharex=True) #, sharey=True)
     ax[0].plot(in_buffer[:, 0], color = 'k')
     
-    steps = ['pgc1', 'levels', 'hpaf', 'pgc2']
+    steps = ['pgc1', 'levels', 'hpaf', 'pgc2', 'passive']
     for i, k in enumerate(steps):
         
         online_arr = online_arrs[k]
@@ -70,7 +70,7 @@ def test_pgc1():
     in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
     loss_params['right'] = loss_params['left']
 
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
@@ -107,7 +107,7 @@ def test_levels():
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
@@ -155,7 +155,7 @@ def test_hpaf():
     in_buffer = hls.moving_erb_noise(length)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
@@ -196,7 +196,7 @@ def test_pgc2():
     in_buffer = hls.whitenoise(length, sample_rate=sample_rate,)
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
-    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss' : [0]*7 } }
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=32, level_max=120, level_step=1, debug_mode=True, 
@@ -237,10 +237,48 @@ def test_pgc2():
     
     # TODO make one values per band
     assert np.max(residual)<2e-2, 'hpaf online differt from offline'
+
+
+def test_passive_loss():
+    in_buffer = hls.moving_sinus(length, sample_rate=sample_rate, speed = .5,  f1=500., f2=2000.,  ampl = .8)
+    in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
+    loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [1.]*7, 'passive_loss_db' : [-20.]*7 } }
+    loss_params['right'] = loss_params['left']
 
-
-
+    processing_conf = dict(nb_freq_band=32, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
+    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    
+    n = processing.nb_freq_band
+    
+    online_pgc2 = online_arrs['pgc2']
+    online_passive = online_arrs['passive']
+    #~ offline_passive = online_pgc2.copy()
+    
+    
+    #~ channels = ('left', 'right')[:nb_channel]
+    
+    #~ for c, chan in enumerate(channels):
+        #~ for i in range(n):
+            #~ offline_passive[:, c*n + i] = processing.passive_gain[c*n + i] * online_pgc2
+    offline_passive = processing.passive_gain.T * online_pgc2
+    
+    residual = np.abs((online_passive.astype('float64')-offline_passive.astype('float64'))/np.mean(np.abs(offline_passive.astype('float64'))))
+    print(np.max(residual))
+    
+    freq_band = 15
+    
+    fig, ax = plt.subplots(nrows = 2, sharex=True)
+    #~ ax[0].plot(in_buffer2[:, freq_band], color = 'k')
+    ax[0].plot(offline_passive[:, freq_band], color = 'g')
+    ax[0].plot(online_passive[:, freq_band], color = 'r', ls='--')
+    ax[1].plot(residual[:, freq_band], color = 'm')
+    for i in range(nloop):
+        ax[1].axvline(i*chunksize)
+    plt.show()
+    
+    assert np.max(residual)<1e-4, 'passive online differt from offline'
+    
     
     
     
@@ -250,6 +288,7 @@ if __name__ =='__main__':
     #~ test_levels()
     #~ test_hpaf()
     #~ test_pgc2()
+    #~ test_passive_loss()
     
 
 

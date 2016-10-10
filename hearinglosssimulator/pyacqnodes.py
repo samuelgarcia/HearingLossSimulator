@@ -102,7 +102,7 @@ class BasePyacqNode(BaseProcessingNode):
         total_channel = self.params['nb_freq_band']*self.nb_channel
         
         if self.debug_mode:
-            steps = ['pgc1', 'levels', 'hpaf', 'pgc2']
+            steps = ['pgc1', 'levels', 'hpaf', 'pgc2', 'passive']
             for step in steps:
                 self._output_specs[step] = dict(streamtype='signals', shape=(-1,total_channel),
                         sample_rate=self.sample_rate)

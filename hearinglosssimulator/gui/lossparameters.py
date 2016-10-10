@@ -159,12 +159,12 @@ class OneChannelHearingLossParameter(QtGui.QWidget):
         for i in range(n):
             self.spin_comp_degree[i].setValue(compression_degree[i]*100.)
     
-    def get_passive_loss(self):
-        passive_loss = np.array(self.hearing_level) - self.compression_loss_clip
-        return passive_loss.tolist()
+    def get_passive_loss_db(self):
+        passive_loss_db = np.array(self.hearing_level) - self.compression_loss_clip
+        return passive_loss_db.tolist()
     
-    def set_passive_loss(self, passive_loss):
-        self.hearing_level = (np.array(self.compression_loss) + np.array(passive_loss)).tolist()
+    def set_passive_loss_db(self, passive_loss_db):
+        self.hearing_level = (np.array(self.compression_loss) + np.array(passive_loss_db)).tolist()
         self.refresh_canvas()
         self.refresh_spinbox()
         
@@ -233,10 +233,15 @@ class HearingLossParameter(QtGui.QWidget):
             k = self.combo_compression_loss_preset.currentText()
             p.compression_loss = list(compression_loss_preset[k])
             p.compression_loss_clip = np.amin([p.hearing_level, p.compression_loss], axis=0)
-            
+            #~ print(ear)
+            #~ print(p.compression_loss)
+            #~ print(p.compression_loss_clip)
             
             p.refresh_canvas()
             p.refresh_spinbox()
+            #~ print(p.compression_loss)
+            #~ print(p.compression_loss_clip)
+            
     
     def set_nb_channel(self, n):
         assert n in (1,2), 'only mono or stereo'
@@ -251,14 +256,14 @@ class HearingLossParameter(QtGui.QWidget):
     def set_configuration(self, **config):
         for k, conf in config.items():
             self.hl_params[k].set_compression_degree(conf['compression_degree'])
-            self.hl_params[k].set_passive_loss(conf['passive_loss'])
+            self.hl_params[k].set_passive_loss_db(conf['passive_loss_db'])
     
     def get_configuration(self):
         config = {}
         for ear in ('left', 'right')[:self.nb_channel]:
             config[ear] = {
                         'freqs' : freqs,
-                        'passive_loss' : self.hl_params[ear].get_passive_loss(),
+                        'passive_loss_db' : self.hl_params[ear].get_passive_loss_db(),
                         'compression_degree' : self.hl_params[ear].compression_degree_clip,
                         }
         return config
