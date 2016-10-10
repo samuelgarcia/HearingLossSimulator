@@ -136,12 +136,12 @@ def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
     nb_channel = in_wav.channels
     chunksize = params['chunksize']
     backward_chunksize =  params['backward_chunksize']
-    if len(params['loss_weigth'])<nb_channel:
-        params['loss_weigth'] = params['loss_weigth']*nb_channel
+    if len(params['loss_params'])<nb_channel:
+        params['loss_params']['right'] = dict(params['loss_params']['left'])
     
     
     processing, loop = make_processing_loop(InvCGC, in_buffer, chunksize, sample_rate, dtype='float32', 
-            processing_conf={}, buffersize_margin=0, time_stats=False)
+            processing_conf=params, buffersize_margin=0, time_stats=False)
     
     for i, returns in enumerate(loop()):
         out_index, processed_data = returns['main_output']

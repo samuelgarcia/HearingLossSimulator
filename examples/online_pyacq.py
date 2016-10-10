@@ -21,11 +21,18 @@ sample_rate = 44100.
 chunksize = 512
 backward_chunksize = chunksize * 3
 
+loss_params = {  'left' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 8000.],
+                                            'compression_degree': [0., 0., 0., 0., 0., 0., 0.],
+                                            'passive_loss_db' : [0., 0., 0., 0., 0., 0., 0.],
+                                        },
+                        }
+
+
 params = dict(
         nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
         tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
         calibration =  93.979400086720375,
-        loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel,
+        loss_params = loss_params,
         chunksize=chunksize, backward_chunksize=backward_chunksize,
         debug_mode=False,
     )
