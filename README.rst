@@ -16,14 +16,14 @@ This not so hard but not as easy to install as python stack.
 
 The module come with a GUI for the online simulator:
 
-.. image:: (doc/source/img/screenshot.png
+.. image:: doc/source/img/screenshot.png
 
 The algorithm simulate both outer hair cell (OHC) loss and  inner hair cells (IHC) loss.
 The OHC loss is simulated by a deficit in compression and IHC loss with a passive loss.
 
 Here the block diagram of the algorithm:
 
-.. image:: (doc/source/img/processing_diagram.png
+.. image:: doc/source/img/processing_diagram.png
 
 
 
