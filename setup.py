@@ -5,13 +5,13 @@ install_requires = ['numpy',
                     'scipy',
                     'pyopencl',
                     'sounddevice',
-                    #~ 'soundfile',
-                    #~ 'pyacq',
-                    #~ 'PyQt5',
                     ]
-
+extras_require={ 'gui' : ['PyQt5', 'pyqtgraph', 'matplotlib'],
+                            'soundfile': ['soundfile'], 
+                            'pyacq' : 'pyacq',
+                        }
+                        
 import hearinglosssimulator
-
 
 
 setup(
@@ -19,12 +19,13 @@ setup(
     version = hearinglosssimulator.__version__,
     packages = ['hearinglosssimulator', ],
     install_requires=install_requires,
+    extras_require = extras_require,
     author = "Samuel Garcia",
-    author_email = "sgarcia at olfac.univ-lyon1.fr",
-    description = "Near real time hearing loss simulator in python based on DCGC.",
-    long_description = "",
+    author_email = "samuel.garcia@cnrs.fr",
+    description = "Near real time hearing loss simulator in python based on Compressive Gammachirp.",
+    long_description = open('README.rst').read(),
     license = "MIT",
-    url='http://neuralensemble.org/neo',
+    url='http://hearinglosssimulator.readthedocs.io/',
     classifiers = [
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
