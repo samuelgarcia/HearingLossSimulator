@@ -1,21 +1,15 @@
-hearinglosssimulator's documentation!
-================================================
-
-Hearing loss simulator in python.
+.. include:: ../../README.rst
 
 
 
-Contents:
+API Documentation
+-----------------
 
-.. toctree::
-   :maxdepth: 2
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+    
+    Index
+    -----
+    
+    * :ref:`genindex`
+    * :ref:`modindex`
+    * :ref:`search`
 
