@@ -65,7 +65,7 @@ for ax in [ax2, ax3]:
     ax.set_ylim(-70,20)
 
 #~ fig1.savefig('input_output_gain.png')
-#~ fig2.savefig('filter_pgc_and_hpaf.png')
-#~ fig3.savefig('filter_cgc.png')
+#~ fig3.savefig('filter_pgc_and_hpaf.png')
+#~ fig2.savefig('filter_cgc.png')
 
 plt.show()

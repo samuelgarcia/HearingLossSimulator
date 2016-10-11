@@ -136,8 +136,10 @@ Step:
   1. **PGC1** : The input sound is filtered by a bank of N passive gammachirp filter. N is tipycally 32.
   2. **Level estimation** : The instantaneous level is estimated in dB for each band. Sample by sample.
   3. **HP-AF** : A Highpass filter filter where the central frequency is dynamically controled by level.
-  4. **PGC2** : Time reversal passive gammachirp. Identical to **PGC1**. This induced a delay for realtime.
+  4. **PGC2** : Time reversal passive gammachirp. Identical to **PGC1**. The is for phase regulation in between bands. This induced a delay for realtime.
   5. **passive gain** : a passive gain for each band.
+  6. **sum** : sum all bands for resynthesis.
+
 
 Step 1, 2, 3, 4:  togother are the compressive gammachrip (**CGC**). This model the outer hair cell (OHC) impairement by cancelling the natural compression.
 
@@ -146,13 +148,13 @@ Step 5: This model inner hair cells (IHC) loss with a static gain.
 
 As example here the 1000 Hz band
 
-The PGC in black and HP-AF levelled controled frequency repsonse.
+The PGC filter (in black) and HP-AF (color) levelled controled frequency repsonse.
 Blue are low levels and red high levels.
 Note that the **HP-AF** is moving from left (low, blue) to right (high, red).
 
 .. image:: img/filter_pgc_and_hpaf.png
 
-The sum of the PGC1 + HP-AF + PGC2 is the CGC (compressive gammachirp).
+The sum of the PGC1 + HP-AF + PGC2 is the InvCGC (Inverse Compressive Gammachirp).
 Blue are low levels and red high levels.
 Note that for low level there is a negative gain. For high level, the gain tend to zero dB:
 
