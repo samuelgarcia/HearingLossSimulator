@@ -45,7 +45,7 @@ The OHC loss is simulated by a deficit in compression and IHC loss with a passiv
 Requirements
 ------------
 
-Python 3 scientific stack:
+**Python 3 scientific stack**:
     Of course you need python and the classical scientific stack.
     You need at least python 3.5.
     
@@ -60,7 +60,21 @@ Python 3 scientific stack:
     
         conda install numpy scipy pyopencl sounddevice
 
-For the GUI:
+**OpenCL**:
+    OpenCL, the GPU language progamming. The central part of the simulator is done
+    with OpenCL. While OpenCL is an open implementation, OpenCL drivers by themself
+    are not opensource. You need to install OpenCL driver of your GPU device (and sometime
+    the opencl sdk) manually.
+    GPU manufacturer provide these drivers:
+      * Nvidia : https://developer.nvidia.com/opencl
+      * AMD: http://support.amd.com/en-us/kb-articles/Pages/OpenCL2-Driver.aspx
+      * Intel : https://software.intel.com/en-us/intel-opencl
+    You will that for some of GPU vendors you need to give some personal
+    information about you before downloading drivers. It can provoke irritating
+    feeling.
+
+
+**For the GUI**:
     For using the GUI you also need:
         * PyQt5
         * pyqtgraph
@@ -74,8 +88,8 @@ For the GUI:
     Or::
         
         conda install python3-pyqt5 python3-matplotlib pyqtgraph
-    
-For read/write wavefile:
+
+**For read/write wavefile**:
     For playing with wav file you need soundfile_::
     
         pip3 install soundfile
@@ -92,14 +106,18 @@ For read/write wavefile:
 Installation
 ------------
 
-.. warning::
-    On actual ubuntu/debian python is python2 so you need to change all python by python3.
+When all requirements are installed you are almost done!!
 
-hearinglosssimulator is work in progrees so you must install github version::
+hearinglosssimulator is work in progrees so you must install github version,
+there is no python packge yet::
 
     git clone https://github.com/samuelgarcia/HearingLossSimulator.git
     cd HearingLossSimulator
     python setup.py install 
+
+.. warning::
+    On actual ubuntu/debian python is python2 so you need to change all python by python3.
+
 
 
 Start GUI
@@ -108,6 +126,8 @@ Start GUI
 To start the main GUI::
 
     python start_online_hearingloss.py
+
+On some windows installation, you can also double click on the *start_online_hearingloss.py*.
 
 You should see this:
 
@@ -168,6 +188,11 @@ Here the input/output inverse compressive gammachrip. So it is an expander.
 
 Algorithm parameters
 --------------------
+
+
+
+Implementation details
+----------------------
 
 
 
