@@ -1,3 +1,6 @@
+"""
+This illustrate how to use the InvCGC as a pyacq Node.
+"""
 import hearinglosssimulator as hls
 import pyacq
 
@@ -29,7 +32,7 @@ loss_params = {  'left' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 80
 
 
 params = dict(
-        nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
+        nb_freq_band=16, low_freq = 100., high_freq = 15000.,
         tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
         calibration =  93.979400086720375,
         loss_params = loss_params,

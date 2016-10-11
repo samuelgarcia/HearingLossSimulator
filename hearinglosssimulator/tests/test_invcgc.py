@@ -200,7 +200,7 @@ def test_pgc2():
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=32, level_max=120, level_step=1, debug_mode=True, 
-                low_freq = 60., hight_freq = 15000.,
+                low_freq = 60., high_freq = 15000.,
                 loss_params = loss_params,
                 chunksize=chunksize, backward_chunksize=backward_chunksize)
     processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)

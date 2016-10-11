@@ -42,7 +42,7 @@ class InvCGC:
     ----
     nb_freq_band: nb band of filter for each channel
     low_freq: first filter (Hz)
-    hight_freq = last filter (Hz)
+    high_freq = last filter (Hz)
     tau_level: (s) decay for level estimation
     smooth_time:  (s)  smothin windows  for level estimation
     level_step: step (dB) for precomputing hpaf filters. The smaller = finer garin but high memory for GPU
@@ -80,7 +80,7 @@ class InvCGC:
         print(self.ctx)
     
     
-    def configure(self, nb_freq_band=16, low_freq = 100., hight_freq = 15000.,
+    def configure(self, nb_freq_band=16, low_freq = 100., high_freq = 15000.,
                 tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
                 calibration =  93.979400086720375,
                 loss_params = {},
@@ -89,7 +89,7 @@ class InvCGC:
         
         self.nb_freq_band = nb_freq_band
         self.low_freq = low_freq
-        self.hight_freq = hight_freq
+        self.high_freq = high_freq
         self.tau_level = tau_level
         self.smooth_time = smooth_time
         self.level_step = level_step
@@ -109,7 +109,7 @@ class InvCGC:
     
     def make_filters(self):
         self.total_channel = self.nb_freq_band*self.nb_channel
-        self.freqs = erbspace(self.low_freq,self.hight_freq, self.nb_freq_band)
+        self.freqs = erbspace(self.low_freq,self.high_freq, self.nb_freq_band)
         
         channels = ('left', 'right')[:self.nb_channel]
         # interpolate compression_degree and passive_loss

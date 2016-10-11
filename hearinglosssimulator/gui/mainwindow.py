@@ -215,8 +215,8 @@ class MainWindow(QtGui.QMainWindow):
         loss_params = self.hearingLossParameter.get_configuration()
 
         params = dict(
-                #~ nb_freq_band=32, low_freq = 80., hight_freq = 20000.,
-                nb_freq_band=10, low_freq = 80., hight_freq = 15000.,
+                #~ nb_freq_band=32, low_freq = 80., high_freq = 20000.,
+                nb_freq_band=10, low_freq = 80., high_freq = 15000.,
                 tau_level = 0.005, level_step =1., level_max = 120.,
                 calibration =  calibration,
                 loss_params = loss_params,

@@ -55,7 +55,7 @@ def plot_residual():
     
     for i, backward_chunksize in enumerate(backward_chunksizes):
         print('backward_chunksize', backward_chunksize)
-        processing_conf = dict(nb_freq_band=nb_freq_band, low_freq = 40., hight_freq = 500.,
+        processing_conf = dict(nb_freq_band=nb_freq_band, low_freq = 40., high_freq = 500.,
                     level_max=120, level_step=120, debug_mode=True, 
                     chunksize=chunksize, backward_chunksize=backward_chunksize)
         processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)

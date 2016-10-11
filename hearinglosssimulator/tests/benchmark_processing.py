@@ -29,8 +29,16 @@ in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
 #~ print(in_buffer.shape)
 #~ exit()
 
-loss_weigth = [ [(50,0.), (1000., -35), (2000., -40.), (6000., -35.), (25000,0.),]]*nb_channel
-processing_conf = dict(nb_freq_band=10, level_step=4, loss_weigth=loss_weigth, 
+loss_params = {  'left' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 8000.],
+                                            'compression_degree': [0., 0., 0., 0., 0., 0., 0.],
+                                            'passive_loss_db' : [0., 0., 0., 0., 0., 0., 0.],
+                                        },
+                            'right' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 8000.],
+                                            'compression_degree': [0., 0., 0., 0., 0., 0., 0.],
+                                            'passive_loss_db' : [0., 0., 0., 0., 0., 0., 0.],
+                                        }
+                        }
+processing_conf = dict(nb_freq_band=32, level_step=4, loss_params=loss_params, 
             debug_mode=False, chunksize=chunksize, backward_chunksize=backward_chunksize)
 #~ node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, 
                 #~ sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
