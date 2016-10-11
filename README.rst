@@ -5,7 +5,7 @@ Near real time hearing loss simulator in python based on Compressive Gammachirp.
 
 Main documentation is here: http://hearinglosssimulator.readthedocs.io/
 
-Compressive Gammachirp come from Irino, Patterson et al.
+The concept of *Compressive Gammachirp* is from Toshio Irino, Roy Patterson et al.
 
 This code derive from original matlab code of Toshio Irino.
 Is is not an exact port but it is very similar.

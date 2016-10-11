@@ -20,10 +20,11 @@ License:
 Overview
 --------
 
-Compressive Gammachirp come from Irino, Patterson et al.
+The concept of *Compressive Gammachirp* is from Toshio Irino, Roy Patterson et al.
 
 This code derive from original matlab code of Toshio Irino.
 Is is not an exact port but it is very similar.
+
 The 2 goals of the actual recoding was:
   * to make the algorithm near real time.
   * to get an opensource version.
@@ -48,16 +49,16 @@ Requirements
 **Python 3 scientific stack**:
     Of course you need python and the classical scientific stack.
     You need at least python 3.5.
-    
+        
     On linux, you can get it is often already installed.
     On debian/unbuntu/mint::
-    
+        
         sudo apt-get python3 python3-numpy python3-scipy python3-pyopencl
         pip3 install sounddevice
-    
+        
     On other platform, the easiest convinient way is to install anaconda_ python distribution.
     Choose python 3.5 (or more), and then::
-    
+        
         conda install numpy scipy pyopencl sounddevice
 
 **OpenCL**:
@@ -69,6 +70,7 @@ Requirements
       * Nvidia : https://developer.nvidia.com/opencl
       * AMD: http://support.amd.com/en-us/kb-articles/Pages/OpenCL2-Driver.aspx
       * Intel : https://software.intel.com/en-us/intel-opencl
+    
     You will that for some of GPU vendors you need to give some personal
     information about you before downloading drivers. It can provoke irritating
     feeling.
@@ -138,7 +140,7 @@ Algorithm principle
 
 Toshio Irino and Roy Pattersonet al. are main inventor of the hearing loss simulator based on the compressive gammachirp model.
 
-For more detail you should read at leat this reference:
+For more detail you should read at leat these references:
   * A dynamic compressive gammachirp auditory filterbank : Irino,T. and and Patterson,R.D. : IEEE Trans.ASLP, Vol.14, Nov.2006.
   * Accurate Estimation of Compression in Simultaneous Masking Enables the Simulation of Hearing Impairment for Normal-Hearing Listeners : Irino T, Fukawatase T, Sakaguchi M, Nisimura R, Kawahara H, Patterson RD : Adv Exp Med Biol. 2013
   * Hearing impairment simulator based on compressive gammachirp filter : Misaki Nagae, Toshio Irino, Ryuich Nisimura, Hideki Kawahara, Roy D Patterson : Signal and Information Processing Association Annual Summit and Conference (APSIPA), 2014 Asia-Pacific
@@ -152,7 +154,7 @@ The main processing diagram is the following:
 
 .. image:: img/processing_diagram.png
 
-Step:
+Steps:
   1. **PGC1** : The input sound is filtered by a bank of N passive gammachirp filter. N is tipycally 32.
   2. **Level estimation** : The instantaneous level is estimated in dB for each band. Sample by sample.
   3. **HP-AF** : A Highpass filter filter where the central frequency is dynamically controled by level.
@@ -161,7 +163,7 @@ Step:
   6. **sum** : sum all bands for resynthesis.
 
 
-Step 1, 2, 3, 4:  togother are the compressive gammachrip (**CGC**). This model the outer hair cell (OHC) impairement by cancelling the natural compression.
+Steps 1, 2, 3, 4:  togother are the inverse compressive gammachrip (**InvCGC**). This model the outer hair cell (OHC) impairement by cancelling the natural compression.
 
 Step 5: This model inner hair cells (IHC) loss with a static gain.
 
@@ -191,9 +193,38 @@ Algorithm parameters
 
 
 
+.. automethod:: hearinglosssimulator.invcgc.InvCGC.__init__()
+.. automethod:: hearinglosssimulator.invcgc.InvCGC.configure()
+
+
+Calibration
+-----------
+
+
+
+
 Implementation details
 ----------------------
 
+  * All filters bank are compute on time domain. So there is no window/overlap/add.
+    All processing are done sample by sample, even level estimation.
+  * Practically, processing are applied on chunk (typically 512 samples) but
+    thre is no border effect since filters state are kept for next chunk. So chunksize
+    do not affect the processing (only latency).
+  * Filter are all biquadratic (more stable) = SOS (second order section)
+  * Implementation of SOS is done with `form II`_.
+  * number of sections: 8 (PGC1) + 4 (dynamic HP-AF) + 8 (PGC2)
+  * backward proccsing for PGC2 (time reversal) filter induce a delay.
+    *delay=backward_chunksize-chunksize*. backward_chunksize affect the processing.
+    If it is too small, it lead to distrotion in low frequencies.
+  * All HP-AF filters a precomputed for each band and each levels before running.
+    Filter coefficient are not computed on the fly.
+  * Python/scipy is used for computing each filter (easy to debug)
+  * OpenCl is used for applying filters (faster)
+  * N sections for each channel are more or less computed in parralel.
+    
+    
+.. _`form II` : https://en.wikipedia.org/wiki/Digital_filter#Direct_form_II
 
 
 
@@ -201,6 +232,10 @@ GUI
 ---
 
 
+Examples
+--------
+
+:doc:`examples`
 
 
 

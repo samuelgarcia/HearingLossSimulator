@@ -21,10 +21,6 @@ from .filterfactory import (erbspace)
 from .cgcfilter import make_cgc_filter
 
 
-"""
-
-
-"""
 
 
 # read opencl source code
@@ -36,25 +32,20 @@ with open(cl_code_filename, mode='r') as f:
 
 class InvCGC:
     """
-    Node for conputing DGCG filters.
-    
-    Variables:
-    ----
-    nb_freq_band: nb band of filter for each channel
-    low_freq: first filter (Hz)
-    high_freq = last filter (Hz)
-    tau_level: (s) decay for level estimation
-    smooth_time:  (s)  smothin windows  for level estimation
-    level_step: step (dB) for precomputing hpaf filters. The smaller = finer garin but high memory for GPU
-    level_max: max level (dB) for level
-    calibration: equivalent dbSPL for 0dBFs. 0dBFs is one sinus of amplitude 1
-                    default is 93.979400086720375 dBSPL is equivalent when amplitude is directly the pressure
-                    so 0dbSPL is 2e-5Pa
-    
+    Class for computing the InvCGC filter bank.
     
     """    
     def __init__(self, nb_channel=1, sample_rate=44100., dtype='float32',
                 apply_configuration_at_init=True, **params):
+        """
+        Parameters:
+            nb_channel (int) : 1 or 2 for mono/stereo
+            sample_rate (float): sample rate in Hz
+            dtype : internal dtype. Only tested with 'float32' at the moment.
+            apply_configuration_at_init: if True use **params and configure at init
+            **params: params for self.configure()
+            
+        """
 
         self.nb_channel = nb_channel
         self.sample_rate = sample_rate
@@ -84,8 +75,50 @@ class InvCGC:
                 tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
                 calibration =  93.979400086720375,
                 loss_params = {},
-                chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False, **kargs):
+                chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False):
+        """
+        Parameters:
+            nb_freq_band (int): number of frequency band per channel
+            low_freq (float): low freq limit
+            high_freq (float): high freq limit
+            tau_level (float): give inthe tau value in second for level estimation
+            level_max (float) : maximum level for invers compression in dB.
+                Over this level no more inv compression.
+            level_step (float): level step in dB for precomputing HP-AF
+            calibration (float): equivalent dbSPL for 0dBFs. 0dBFs is one sinus of amplitude 1
+            loss_params (dict): dict with loss parameters. See below.
+            chunksize (int): size in sample of each chunk of sound data
+            backward_chunksize (int): size in sample of each backward chunk of sound data
+                This must be  consider wisely because if too small, it lead to distortion in low frequency.
+                If too high lead to much more comptation.
+            bypass (bool): this bypass the processing. Convinience for the GUI.
+            debug_mode (bool): False by default. If True each steps (pgc1, levels, hpaf, pgc2, 
+                    passivei)s also copied to outputs.
+                    
+        **loss_params** is dict defined like this::
         
+            loss_params = { 'left' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 8000.],
+                                    'compression_degree': [0., 0., 0., 0., 0., 0., 0.],
+                                    'passive_loss_db' : [0., 0., 0., 0., -5., -10., -20.],
+                                },
+                                'right' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 8000.],
+                                    'compression_degree': [0., 0., 0., 0., 0., 0., 0.],
+                                    'passive_loss_db' : [0., 0., 0., 0., -5., -10., -20.],
+                                }
+                            }
+                        
+        
+        Where:
+            * **freqs** are some frequencies. Others frequency are interpolate, so it is 
+                independant of `nb_freq_band`.
+            * **compression_degree** is the healthyness of the compression for each band.
+            1= no compression loss. 0=full compression loss.
+            * **passive_loss_db** is a negative number in db for each band.
+        
+        In the previous example, all band have full compressive impairement and 2000. to 8000.
+        Hz have a passive loss.
+        
+        """
         
         self.nb_freq_band = nb_freq_band
         self.low_freq = low_freq
@@ -349,7 +382,7 @@ class InvCGC:
                 returns['pgc2'] = (pos2, self.out_pgc2.T)
             
             # passive gain by band
-            # on very basic benchùark numpy is faster than opencl!!!
+            # on very basic benchmark numpy is faster than opencl!!!
             pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
             self.out_passive = self.out_pgc2 * self.passive_gain # NUMPY VERSION
             
