@@ -16,6 +16,7 @@ level_step = 10.
 
 freqs = [300., 1000., 4000., ]
 
+
 # No compression loss
 #compression_degree = [1]*len(freqs)
 
@@ -25,9 +26,9 @@ compression_degree = [0]*len(freqs)
 
 coefficients_pgc, coefficients_hpaf, levels, band_overlap_gain = hls.make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rate)
 
-fig, ax1 = plt.subplots()
-fig, ax2 = plt.subplots()
-fig, ax3 = plt.subplots()
+fig1, ax1 = plt.subplots()
+fig2, ax2 = plt.subplots()
+fig3, ax3 = plt.subplots()
 
 levels_colors = [ get_cmap('jet', len(levels))(l) for l, level in enumerate(levels) ]
 freqs_colors = [ get_cmap('jet', len(freqs))(f) for f, freq in enumerate(freqs) ]
@@ -45,7 +46,7 @@ for f, freq in enumerate(freqs):
         hls.plot_filter(all_filter, ax2, sample_rate, color=levels_colors[l])
         hls.plot_filter(coefficients_hpaf[f,l,:,:], ax3, sample_rate, color=levels_colors[l])
     
-    hls.plot_filter(coefficients_pgc[f,:,:], ax3, sample_rate, color='k')
+    hls.plot_filter(coefficients_pgc[f,:,:], ax3, sample_rate, color='k', lw=2)
     ax3.axvline(freq, color='k')
     ax2.axvline(freq, color='k')
     
@@ -54,9 +55,17 @@ ax1.plot(levels,levels, color='r', ls='--')
     
     
 ax1.legend()
-ax2.set_xlim(0., 5000.)
-ax3.set_xlim(0., 5000.)
-ax2.set_ylim(-70,20)
-ax3.set_ylim(-70,20)
+ax1.set_xlabel('input level (dB SPL)')
+ax1.set_ylabel('output level (dB SPL)')
+
+for ax in [ax2, ax3]:
+    ax.set_xlabel('freq (Hz)')
+    ax.set_ylabel('filter gain (dB)')
+    ax.set_xlim(0., 5000.)
+    ax.set_ylim(-70,20)
+
+#~ fig1.savefig('input_output_gain.png')
+#~ fig2.savefig('filter_pgc_and_hpaf.png')
+#~ fig3.savefig('filter_cgc.png')
 
 plt.show()

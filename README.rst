@@ -1,32 +1,30 @@
 HearingLossSimulator
 ======================
 
-This a near real time hearing loss simulator in python+opencl based on Compressive Gammachirp.
+Near real time hearing loss simulator in python based on Compressive Gammachirp. 
 
-Main doc (work in progress): http://hearinglosssimulator.readthedocs.io/
+Main documentation is here: http://hearinglosssimulator.readthedocs.io/
 
 Compressive Gammachirp come from Irino, Patterson et al.
 
-The present code is not an exact port of matlab Irino's code but it is is very similar.
+This code derive from original matlab code of Toshio Irino.
+Is is not an exact port but it is very similar.
 
-It can be used offline (by scritting) or online (on close llop on the audio device).
+It can be used:
+  * offline in python script for testing the algorithm.
+  * online (on close loop on the audio device).
 
-The code need OpenCL to be installed and configured on the device.
-This not so hard but not as easy to install as python stack.
+The algorithm simulate both outer hair cell (OHC) loss and  inner hair cells (IHC) loss.
+The OHC loss is simulated by a deficit in compression and IHC loss with a passive loss.
 
 The module come with a GUI for the online simulator:
 
 .. image:: doc/source/img/screenshot.png
 
-The algorithm simulate both outer hair cell (OHC) loss and  inner hair cells (IHC) loss.
-The OHC loss is simulated by a deficit in compression and IHC loss with a passive loss.
 
 Here the block diagram of the algorithm:
 
 .. image:: doc/source/img/processing_diagram.png
-
-
-
 
 
 
