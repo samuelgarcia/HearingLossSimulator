@@ -2,8 +2,11 @@ from setuptools import setup
 import os
 
 install_requires = ['numpy',
-                    'pyacq',
                     'pyopencl',
+                    'sounddevice',
+                    #~ 'soundfile',
+                    #~ 'pyacq',
+                    #~ 'PyQt5',
                     ]
 
 import hearinglosssimulator

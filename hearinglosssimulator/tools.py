@@ -3,7 +3,11 @@ import scipy.signal
 import os
 import tempfile
 
-import soundfile
+try:
+    import soundfile
+    HAS_SOUNDFILE = True
+except ImportError:
+    HAS_SOUNDFILE = False
 #~ import pyaudio
 import sounddevice as sd
 
@@ -33,6 +37,7 @@ def rms_level(sound):
     
 
 def play_with_vlc(sounds, sample_rate = 44100):
+    assert HAS_SOUNDFILE, 'soundfile need to be installed'
     dir = tempfile.gettempdir()+'/play_with_vlc/'
     if not os.path.exists(dir):
         os.mkdir(dir)
