@@ -224,7 +224,7 @@ Implementation details
   * N sections for each channel are more or less computed in parralel.
     
     
-.. _`form II` : https://en.wikipedia.org/wiki/Digital_filter#Direct_form_II
+.. _`form II` : https://en.wikipedia.org/wiki/Digital_biquad_filter#Direct_form_2
 
 
 
