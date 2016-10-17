@@ -342,6 +342,7 @@ Examples
 API Documentation
 -----------------
 
+:doc:`api`
 
-.. automodule:: hearinglosssimulator
+
 
