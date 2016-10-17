@@ -19,6 +19,19 @@ def make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rat
         * 1=no compression impairement
         * 0= maximum compression impairement
     
+    returns
+    ---
+        
+        coefficients_pgc: sos coefficient of pgc filters shape is (freqs.size, 8, 6)
+        
+        coefficients_hpaf: sos coefficient of hpaf (level dependant). Filter shape is
+            (freqs.size, levels.size, 4, 6)
+        
+        levels: vector of levels.
+        
+        band_overlap_gain: gain for conpensating the overlap between bands. this depend
+          the number of band
+        
     
     
     

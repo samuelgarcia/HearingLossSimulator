@@ -122,18 +122,6 @@ there is no python packge yet::
 
 
 
-Start GUI
----------
-    
-To start the main GUI::
-
-    python start_online_hearingloss.py
-
-On some windows installation, you can also double click on the *start_online_hearingloss.py*.
-
-You should see this:
-
-.. image:: img/screenshot.png
 
 Algorithm principle
 -------------------
@@ -145,7 +133,7 @@ For more detail you should read at leat these references:
   * Accurate Estimation of Compression in Simultaneous Masking Enables the Simulation of Hearing Impairment for Normal-Hearing Listeners : Irino T, Fukawatase T, Sakaguchi M, Nisimura R, Kawahara H, Patterson RD : Adv Exp Med Biol. 2013
   * Hearing impairment simulator based on compressive gammachirp filter : Misaki Nagae, Toshio Irino, Ryuich Nisimura, Hideki Kawahara, Roy D Patterson : Signal and Information Processing Association Annual Summit and Conference (APSIPA), 2014 Asia-Pacific
 
-.. note:: The orignal algorithm has evoluted along the last decade. The actual python/opencl version is a mixed of one of them!
+.. note:: The orignal algorithm has evoluted along the last decade. The actual python/opencl version is a mixed of some of them!
 
 .. note:: The very last version of Toshio Irino is now based on minimum phase filter for the synthesis part (the level estimation  part remian the same as before) : this is not yet ported in python/opencl.
 
@@ -168,7 +156,8 @@ Steps 1, 2, 3, 4:  togother are the inverse compressive gammachrip (**InvCGC**).
 Step 5: This model inner hair cells (IHC) loss with a static gain.
 
 
-As example here the 1000 Hz band
+**As example here the 1000 Hz band:**
+
 
 The PGC filter (in black) and HP-AF (color) levelled controled frequency repsonse.
 Blue are low levels and red high levels.
@@ -191,6 +180,10 @@ Here the input/output inverse compressive gammachrip. So it is an expander.
 Algorithm parameters
 --------------------
 
+The algorithm is done in the class `InvCGC`.
+Fixed parameters like `nb_channel` or `sample_arte` are provided
+at __init__ and all others parameters can be changed on the fly
+(but not instantenaously) in `configure(...)`
 
 
 .. automethod:: hearinglosssimulator.invcgc.InvCGC.__init__()
@@ -200,20 +193,83 @@ Algorithm parameters
 Calibration
 -----------
 
+A major parameters of the algorithm is the `calibration`.
+
+The compression loss depend both of `compression_degree` and the real
+level in dBSPL in each band. Theses levels must represent the true levels
+otherwise the compression loss is not applied correctly.
+
+By internal convention, the `calibration` parameters correspond to relation
+between dBSPL_ and dBFS_:
+
+.. math::
+    
+    Level_{dBSPL} = Level_{dBFS} + calibration
+
+
+With:
+  * dBSPL_ represent the value of accoustic preasure
+  * dBFS_ is a classical scale for digtal sound representation
+    where 0 dBFS is maximum value of a
+    sound which is limited by the sound device. Like in many convention
+    0 dBFS is a sinus with amplitude 1. So bounds by [-1., 1].
+
+    
+.. math::
+
+    Level = 20 log_{10}(p/p_0) dBFS
+
+    
+Where:
+  * p is the root mean square of the signal
+  * p0 is reference (0 dBFS) = root mean square of sinus of amplitude 1.
+
+.. math::
+        
+        p_0=1/sqrt(2)
+
+
+    
+
+.. note::
+
+    For online simulation the sound is cliped by [-1., 1]. But for offline simulation
+    there is not such limitation so the calibration level is **NOT** the maximum 
+    of the input sound. The algorithm itself do not clip.
+
+
+If you want to play with signal that represent a real units of sound pressure in pascal (Pa).
+It is easy. In that case sinus of amplitude 1 represent 1 Pa.
+In SPL the 0 dBSPL is given for 20µPa
+So for 1Pa the **true** dBSPL is:
+
+.. math ::
+    
+    Level_{dBSPL} = 20 log_{10}(p/p_0) = 20 log_{10}(1/sqrt(2)/20e-5) = 90.97
+
+So for **calibration=90.97**, the sound represent the **true** sound presure in pascal.
+
+    
+
+
+
+
+.. _dBFS: https://en.wikipedia.org/wiki/DBFS
+.. _dBSPL: https://en.wikipedia.org/wiki/Sound_pressure#Sound_pressure_level
 
 
 
 Implementation details
 ----------------------
 
-  * All filters bank are compute on time domain. So there is no window/overlap/add.
-    All processing are done sample by sample, even level estimation.
+  * All filters bank are computed on time domain with IIR. So there is no window/overlap/add.
+  * All processing are done sample by sample, even level estimation.
   * Practically, processing are applied on chunk (typically 512 samples) but
     thre is no border effect since filters state are kept for next chunk. So chunksize
     do not affect the processing (only latency).
   * Filter are all biquadratic (more stable) = SOS (second order section)
   * Implementation of SOS is done with `form II`_.
-  * number of sections: 8 (PGC1) + 4 (dynamic HP-AF) + 8 (PGC2)
+  * Nmber of sections: 8 (PGC1) + 4 (dynamic HP-AF) + 8 (PGC2)
   * backward proccsing for PGC2 (time reversal) filter induce a delay.
     *delay=backward_chunksize-chunksize*. backward_chunksize affect the processing.
     If it is too small, it lead to distrotion in low frequencies.
@@ -221,7 +277,8 @@ Implementation details
     Filter coefficient are not computed on the fly.
   * Python/scipy is used for computing each filter (easy to debug)
   * OpenCl is used for applying filters (faster)
-  * N sections for each channel are more or less computed in parralel.
+  * N sections for each channel are more or less computed in parralel but performences
+    depend of the GPU model.
     
     
 .. _`form II` : https://en.wikipedia.org/wiki/Digital_biquad_filter#Direct_form_2
@@ -230,6 +287,49 @@ Implementation details
 
 GUI
 ---
+
+To start the main GUI::
+
+    python start_online_hearingloss.py
+
+On some windows installation, you can also double click on the *start_online_hearingloss.py*.
+
+You should see this:
+
+.. image:: img/screenshot.png
+
+
+
+
+On the top toolbar there is:
+  * **configure audio**: this open a dialog for chosing the good
+    sound device for input and output. You can play a sinus sound
+    to test the output. Be carrful with the sound level.
+  * **configure GPU** : this open a dialog for choosing the GPU
+  * **calibration** this dialog provide helper for getting the good `calibration`
+    parameters wich is relation between dbFS and dBSPL. See `calibration`.
+    In this dialog you play on output audio device a sinus with internal -30dbFS
+    (or what ever). Make a real measurement with a sound level meter. Report the
+    measurement and the relation is automatically deduced.
+
+On the bottom you can setup for each ear:
+  * the **compression_degree** healthyness for each band. 100% mean no compresison loss
+    0% means full compresison loss. This give you the magenta curve.
+  * **hearing level** which you want to simulate. The black curve.
+
+The passive loss between magenta and black curve is automatically deduced.
+
+Before running with **play/stop** you need to compute at least once the filters.
+This can take sevral second depending on the machine.
+
+When running you can bypass the simulator.
+
+You also recompute on the fly new filters.
+
+On the left, there are some preset. And you can save/load your on preset in json files.
+Json files are easy to edit with a standart text editor.
+
+
 
 
 Examples
@@ -242,4 +342,6 @@ Examples
 API Documentation
 -----------------
 
-    
+
+.. automodule:: hearinglosssimulator
+

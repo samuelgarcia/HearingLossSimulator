@@ -79,6 +79,17 @@ def run_one_class_offline(ProcessingClass, in_buffer, chunksize, sample_rate, dt
 
 
 def compute_numpy(sound, sample_rate, **params):
+    """
+    Run InvCGC offline on a numpy buffer.
+    
+    Parameters
+    ---
+        sound: sound shape (len, nb_channel)
+        sample_rate: the sample rate
+        **params: see `InvCGC`.`configure()`
+        
+        
+    """
     assert isinstance(sound, np.ndarray)
     
     if sound.ndim==1:
@@ -126,6 +137,18 @@ class WaveNumpy:
         
 
 def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
+    """
+    Run InvCGC offline on a wave file.
+    
+    Parameters
+    ---
+        in_filename: input file name
+        out_filename: output file name
+        duration_limit: clip the duration. None (default) means all the file.
+        **params: see `InvCGC`.`configure()`
+        
+        
+    """    
     assert in_filename != out_filename
     in_buffer = WaveNumpy(in_filename)
     in_wav = in_buffer.file

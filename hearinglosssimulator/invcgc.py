@@ -109,11 +109,12 @@ class InvCGC:
                         
         
         Where:
-            * **freqs** are some frequencies. Others frequency are interpolate, so it is 
-                independant of `nb_freq_band`.
+            * **freqs** are some frequencies. Others frequencies, for each band,  are interpolated,
+                So size of freqs is  independant of `nb_freq_band`.
             * **compression_degree** is the healthyness of the compression for each band.
-            1= no compression loss. 0=full compression loss.
-            * **passive_loss_db** is a negative number in db for each band.
+                1= no compression loss. 0=full compression loss.
+            * **passive_loss_db** is a negative weigth in db for each band that represent
+                the level independant loss in each band.
         
         In the previous example, all band have full compressive impairement and 2000. to 8000.
         Hz have a passive loss.
