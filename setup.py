@@ -18,12 +18,13 @@ else:
                                 'pyacq' : 'pyacq',
                             }
                         
-import hearinglosssimulator
-
+#import hearinglosssimulator
+#version = hearinglosssimulator.__version__
+version = '1.0.0.dev'
 
 setup(
     name = "hearinglosssimulator",
-    version = hearinglosssimulator.__version__,
+    version = version,
     packages = ['hearinglosssimulator', ],
     install_requires=install_requires,
     extras_require = extras_require,
