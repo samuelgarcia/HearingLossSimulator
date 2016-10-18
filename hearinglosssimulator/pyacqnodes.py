@@ -4,8 +4,9 @@ import numpy as np
 
 try:
     import pyacq
+    HAS_PYACQ = True
 except ImportError:
-    pass
+    HAS_PYACQ = False
 
 
 

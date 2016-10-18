@@ -2,7 +2,7 @@ import os
 import time
 
 import numpy as np
-import scipy.signal
+#import scipy.signal
 import scipy.interpolate
 
 
@@ -14,11 +14,6 @@ try:
 except ImportError:
     HAS_PYOPENCL = False
 
-
-import pyacq
-
-#~ from .filterfactory import (gammatone, asymmetric_compensation_coeffs, loggammachirp, erbspace)
-#~ from .tools import sosfreqz
 from .filterfactory import (erbspace)
 from .cgcfilter import make_cgc_filter
 

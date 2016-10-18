@@ -19,11 +19,7 @@ from .soundgenerator import *
 from .invcgc import *
 from .offlinehelper import *
 
-
-from .pyacqnodes import *
-
-#~ try:
-    #~ from invcgc_pyacq import *    
-#~ except ImportError:
-    #~ pass
-
+try:
+    from .pyacqnodes import *
+except ImportError:
+    pass
