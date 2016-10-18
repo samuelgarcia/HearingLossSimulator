@@ -20,7 +20,10 @@ else:
                         
 #import hearinglosssimulator
 #version = hearinglosssimulator.__version__
-version = '1.0.0.dev'
+
+#version = '1.0.0.dev'
+
+version = open("./hearinglosssimulator/version.py").readline().split('=')[1].replace(' ', '')
 
 setup(
     name = "hearinglosssimulator",
