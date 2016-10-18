@@ -5,16 +5,14 @@ import numpy as np
 import scipy.signal
 import scipy.interpolate
 
-from pyqtgraph.Qt import QtCore
-import pyqtgraph as pg
-#~ from pyqtgraph.util.mutex import Mutex
 
 # this make readthedocs work
 try:
     import pyopencl
     mf = pyopencl.mem_flags
+    HAS_PYOPENCL = True
 except ImportError:
-    pass
+    HAS_PYOPENCL = False
 
 
 import pyacq
