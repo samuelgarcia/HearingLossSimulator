@@ -18,7 +18,9 @@ try:
     HAS_SOUNDDEVICE = True
 except ImportError:
     HAS_SOUNDDEVICE = False
-
+except OSError:
+    # not portaudio
+    HAS_SOUNDDEVICE = False
 
 
 
