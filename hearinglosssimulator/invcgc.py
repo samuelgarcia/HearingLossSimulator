@@ -9,8 +9,12 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 #~ from pyqtgraph.util.mutex import Mutex
 
-import pyopencl
-mf = pyopencl.mem_flags
+# this make readthedocs work
+try:
+    import pyopencl
+    mf = pyopencl.mem_flags
+except ImportError:
+    pass
 
 
 import pyacq
