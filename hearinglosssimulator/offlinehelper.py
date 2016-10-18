@@ -1,9 +1,12 @@
 import numpy as np
 import time
 
-import pyacq
+try:
+    import soundfile
+    HAS_SOUNDFILE = True
+except ImportError:
+    HAS_SOUNDFILE = False
 
-import soundfile
 
 from .invcgc import InvCGC
 
@@ -149,6 +152,8 @@ def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
         
         
     """    
+    assert HAS_SOUNDFILE, 'soundfile need to be installed'
+    
     assert in_filename != out_filename
     in_buffer = WaveNumpy(in_filename)
     in_wav = in_buffer.file
