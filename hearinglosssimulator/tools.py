@@ -12,7 +12,14 @@ try:
 except ImportError:
     HAS_SOUNDFILE = False
 #~ import pyaudio
-import sounddevice as sd
+
+try:
+    import sounddevice as sd
+    HAS_SOUNDDEVICE = True
+except ImportError:
+    HAS_SOUNDDEVICE = False
+
+
 
 
 def sosfreqz(coeff,worN = 4096):
@@ -69,6 +76,7 @@ def play_with_vlc(sounds, sample_rate = 44100):
 
 
 def play_on_device(sound, sample_rate=44100, device=None, chunksize=1024):
+    assert HAS_SOUNDDEVICE, 'sounddevice need to be installed'
     sound = sound.astype('float32')
     sd.play(sound, samplerate=sample_rate, blocksize=chunksize, blocking=True)
 
