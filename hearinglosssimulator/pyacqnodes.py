@@ -113,7 +113,7 @@ class BasePyacqNode(BaseProcessingNode):
         BaseProcessingNode._initialize(self)
         self.mutex = Mutex()
         self.processing = self._processing_class(nb_channel=self.nb_channel, sample_rate=self.sample_rate, dtype='float32',
-                            apply_configuration_at_init=True, **self.params, )
+                            apply_configuration_at_init=True, **self.params )
     
     
     def set_bypass(self, bypass):
