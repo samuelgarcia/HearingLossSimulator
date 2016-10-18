@@ -1,15 +1,22 @@
 from setuptools import setup
 import os
 
-install_requires = ['numpy',
-                    'scipy',
-                    'pyopencl',
-                    'sounddevice',
-                    ]
-extras_require={ 'gui' : ['PyQt5', 'pyqtgraph', 'matplotlib'],
-                            'soundfile': ['soundfile'], 
-                            'pyacq' : 'pyacq',
-                        }
+
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if on_rtd:
+    install_requires = []
+    extras_require = {}
+else:
+    install_requires = ['numpy',
+                        'scipy',
+                        'pyopencl',
+                        'sounddevice',
+                        ]
+    extras_require={ 'gui' : ['PyQt5', 'pyqtgraph', 'matplotlib'],
+                                'soundfile': ['soundfile'], 
+                                'pyacq' : 'pyacq',
+                            }
                         
 import hearinglosssimulator
 
