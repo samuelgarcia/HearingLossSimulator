@@ -21,5 +21,5 @@ from .offlinehelper import *
 
 try:
     from .pyacqnodes import *
-except ImportError:
+except :
     pass

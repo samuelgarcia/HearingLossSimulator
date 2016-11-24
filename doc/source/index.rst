@@ -55,8 +55,8 @@ Requirements
     On linux, you can get it is often already installed.
     On debian/unbuntu/mint::
         
-        sudo apt-get python3 python3-numpy python3-scipy python3-pyopencl
-        pip3 install sounddevice
+        sudo apt-get install python3 python3-pip  python3-numpy python3-scipy python3-pyopencl python3-cffi
+        sudo pip3 install sounddevice
         
     On other platform, the easiest convinient way is to install anaconda_ python distribution.
     Choose python 3.5 (or more), and then::
@@ -76,6 +76,19 @@ Requirements
     For some GPU manufacturers you will need to give some personal
     information about you before downloading drivers. Be aware that
     this can provoke very bad feeling.
+    
+    For some ubuntu distribution if you have nvidia search for package like::
+    
+        sudo apt-get install nvidia-opencl-icd-XXX
+    
+    
+    For testing if you have opencl working lanch python3 and test this
+    if the prompt propose or give a context related to your harware
+    you are lucky!!::
+    
+        import pyopencl
+        pyopencl.create_some_context()
+        
 
 
 **For the GUI**:
@@ -86,8 +99,8 @@ Requirements
         
     In terminal::
         
-        sudo apt-get python3-pyqt5 python3-matplotlib
-        pip3 install pyqtgraph
+        sudo apt-get install python3-pyqt5 python3-matplotlib
+        sudo pip3 install pyqtgraph
         
     Or::
         
@@ -114,14 +127,20 @@ When all requirements are installed you are almost done!!
 
 hearinglosssimulator project is still in progress so you must install github version,
 there is no python packge yet::
-
+    
+    sudo apt-get install git
     git clone https://github.com/samuelgarcia/HearingLossSimulator.git
     cd HearingLossSimulator
-    python setup.py install 
+    python3 setup.py install --user
 
 .. warning::
-    On actual ubuntu/debian python is python2 so you need to change all python by python3.
+    On actual ubuntu/debian python is python2 so you need python3.
+    On other distro check if python is python3 or python2 and adapt this procedure.
 
+    
+Test it in python3::
+
+    import hearinglosssimulator
 
 
 

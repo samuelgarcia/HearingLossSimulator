@@ -23,7 +23,7 @@ else:
 
 #version = '1.0.0.dev'
 
-version = open("./hearinglosssimulator/version.py").readline().split('=')[1].replace(' ', '')
+version = open("./hearinglosssimulator/version.py").readline().split('=')[1].replace(' ', '').replace("'", '')
 
 setup(
     name = "hearinglosssimulator",
