@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 import sounddevice as sd
 
-import pyacq
+#~ import pyacq
 
 import hearinglosssimulator as hls
 from hearinglosssimulator.gui.lossparameters import HearingLossParameter
@@ -86,7 +86,7 @@ class MainWindow(QtGui.QMainWindow):
         #~ self.hearingLossParameter.valueChanged.connect(self.on_hearingloss_changed)
         #~ self.able_to_start = False
         
-        self.pyacq_manager = None
+        #~ self.pyacq_manager = None
         self.stream_done = False
         
         self.mutex = Mutex()
