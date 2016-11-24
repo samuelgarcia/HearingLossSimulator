@@ -106,8 +106,8 @@ class OneChannelHearingLossParameter(QtGui.QWidget):
         for i in range(n):
             losses = [compression_loss_preset[k][i] for k in compression_ratio.keys()]
             comps = list(compression_ratio.values())
-            self.all_interp1d_loss_to_comp[i] = scipy.interpolate.interp1d(losses, comps, kind='linear')
-            self.all_interp1d_comp_to_loss[i] = scipy.interpolate.interp1d(comps, losses, kind='linear')
+            self.all_interp1d_loss_to_comp[i] = scipy.interpolate.interp1d(losses, comps, kind='linear', bounds_error =False, fill_value='extrapolate')
+            self.all_interp1d_comp_to_loss[i] = scipy.interpolate.interp1d(comps, losses, kind='linear', bounds_error =False, fill_value='extrapolate')
             
         self.refresh_spinbox()
 
