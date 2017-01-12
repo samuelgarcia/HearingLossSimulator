@@ -69,7 +69,7 @@ class InvCGC:
     
     
     def configure(self, nb_freq_band=16, low_freq = 100., high_freq = 15000.,
-                tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
+                tau_level = 0.005,  level_step =1., level_max = 120., #smooth_time = 0.0005,
                 calibration =  93.979400086720375,
                 loss_params = {},
                 chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False):
@@ -122,7 +122,7 @@ class InvCGC:
         self.low_freq = low_freq
         self.high_freq = high_freq
         self.tau_level = tau_level
-        self.smooth_time = smooth_time
+        #~ self.smooth_time = smooth_time
         self.level_step = level_step
         self.level_max = level_max
         self.calibration = calibration
@@ -169,7 +169,7 @@ class InvCGC:
         
         
         #TODO : this is for debug only
-        compression_degree = [0.] * len(self.freqs)
+        #~ compression_degree = [0.] * len(self.freqs)
         
         self.coefficients_pgc = [None]*self.nb_channel
         self.coefficients_hpaf = [None]*self.nb_channel
@@ -207,7 +207,7 @@ class InvCGC:
         self.out_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_pgc1 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
-        smooth_sample = int(self.sample_rate*self.smooth_time)
+        #~ smooth_sample = int(self.sample_rate*self.smooth_time)
         smooth_sample = 1
         self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
         self.out_levels = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
