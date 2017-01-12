@@ -89,8 +89,8 @@ class AudioDeviceSelection(QtGui.QWidget):
     def test_play_sinus(self):
         p = self.freqgainduration.get()
         #~ device = (self.get_configuration()['input_device'], self.get_configuration()['output_device'], )
-        device = self.get_configuration()['input_device']
-        print(device)
+        device = self.get_configuration()['output_device']
+        #~ print(device, type(device))
         play_sinus(p['freq'], p['gain'], p['duration'], device=device)
     
     def play_input_to_output(self):
