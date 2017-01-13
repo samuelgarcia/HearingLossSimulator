@@ -33,7 +33,6 @@ class InvCGC(BaseMultiBand):
     Class for computing the InvCGC filter bank.
     
     """    
-    
     def make_filters(self):
         self.total_channel = self.nb_freq_band*self.nb_channel
         self.freqs = erbspace(self.low_freq,self.high_freq, self.nb_freq_band)
@@ -65,7 +64,7 @@ class InvCGC(BaseMultiBand):
         
         
         #TODO : this is for debug only
-        compression_degree = [0.] * len(self.freqs)
+        #~ compression_degree = [0.] * len(self.freqs)
         
         self.coefficients_pgc = [None]*self.nb_channel
         self.coefficients_hpaf = [None]*self.nb_channel
@@ -97,7 +96,7 @@ class InvCGC(BaseMultiBand):
         self.out_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_pgc1 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
-        smooth_sample = int(self.sample_rate*self.smooth_time)
+        #~ smooth_sample = int(self.sample_rate*self.smooth_time)
         smooth_sample = 1
         self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
         self.out_levels = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
