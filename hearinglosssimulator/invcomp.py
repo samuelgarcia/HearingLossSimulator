@@ -15,7 +15,7 @@ except ImportError:
     HAS_PYOPENCL = False
 
 from .filterfactory import (erbspace)
-from .cgcfilter import make_cgc_filter
+from .cgcfilter import make_invcomp_filter
 from .common import BaseMultiBand
 
 
@@ -74,10 +74,7 @@ class InvComp(BaseMultiBand):
             print(chan, 'band_overlap_gain', band_overlap_gain)
         
         self.coefficients_pgc = np.concatenate(self.coefficients_pgc, axis =0)
-        self.gain_controlled = np.gain_controlled(self.coefficients_hpaf, axis =0)
-        
-        print('self.gain_controlled.shape',self.gain_controlled.shape)
-        exit()
+        self.gain_controlled = np.concatenate(self.gain_controlled, axis =0)
         
         self.band_overlap_gain = band_overlap_gain
         self.levels = levels
@@ -90,6 +87,7 @@ class InvComp(BaseMultiBand):
         # one decay per band (for testing)
         #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
     
+    
     def initlalize_cl(self):
         assert self.dtype == np.dtype('float32')
         
@@ -100,28 +98,19 @@ class InvComp(BaseMultiBand):
         self.out_pgc1 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_pgc1 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
-        smooth_sample = int(self.sample_rate*self.smooth_time)
+        #~ smooth_sample = int(self.sample_rate*self.smooth_time)
         smooth_sample = 1
         self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
         self.out_levels = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         
-        self.out_hpaf = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
-        self.zi_hpaf = np.zeros((self.total_channel, self.coefficients_hpaf.shape[2], 2), dtype= self.dtype)
+        #~ self.out_hpaf = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
+        #~ self.zi_hpaf = np.zeros((self.total_channel, self.coefficients_hpaf.shape[2], 2), dtype= self.dtype)
+        self.out_dyngain = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         
         self.out_pgc2 = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         self.zi_pgc2 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
         self.out_passive = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
-        
-        #set initial state to minimize initiale state
-        #~ for chan in range(self.total_channel):
-            #~ for section in range(self.coefficients_pgc.shape[1]):
-                #~ coeff = self.coefficients_pgc[chan, section, :]
-                #~ b, a = coeff[:3], coeff[3:]
-                #~ zi = scipy.signal.lfilter_zi(b, a)
-                #~ self.zi_pgc2[chan, section, :] = zi[::-1]
-        
-        
         
         #GPU buffers
         self.in_channel_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.in_channel)
@@ -136,10 +125,11 @@ class InvComp(BaseMultiBand):
         self.previouslevel_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.previouslevel)
         self.out_levels_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_levels)
         
-        self.outs_hpaf_cl = [pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_hpaf) for _ in range(self.backward_ratio) ]
-        
-        self.zi_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_hpaf)
-        self.coefficients_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.coefficients_hpaf)
+        #~ self.outs_hpaf_cl = [pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_hpaf) for _ in range(self.backward_ratio) ]
+        #~ self.zi_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_hpaf)
+        #~ self.coefficients_hpaf_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.coefficients_hpaf)
+        self.outs_dyngain_cl = [pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_dyngain) for _ in range(self.backward_ratio) ]
+        self.gain_controlled_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.gain_controlled)
         
         self.out_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_pgc2)
         self.zi_pgc2_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.zi_pgc2)
@@ -147,9 +137,7 @@ class InvComp(BaseMultiBand):
         self.passive_gain_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.passive_gain.flatten().copy())
         self.out_passive_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_passive)
         
-        
         # compialtion
-        
         kernel = cl_code%dict(chunksize=self.chunksize,
                                             nb_level=len(self.levels),
                                             levelavgsize=smooth_sample,
@@ -209,7 +197,6 @@ class InvComp(BaseMultiBand):
         
         
         #levels
-        
         global_size = (self.total_channel, )
         local_size = (1,  )
         event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
@@ -221,20 +208,32 @@ class InvComp(BaseMultiBand):
             returns['levels'] = (pos, self.out_levels.T)
         
         
-        # hpaf
-        nb_section = self.coefficients_hpaf.shape[2]
-        global_size = (self.total_channel, nb_section,)
-        local_size = (1, nb_section, )
-        event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
-                                self.out_pgc1_cl, self.out_levels_cl, self.outs_hpaf_cl[ring_pos], self.coefficients_hpaf_cl,
-                                self.zi_hpaf_cl, np.int32(nb_section))
+        # gain controlled = dyngain
+        #~ nb_section = self.coefficients_hpaf.shape[2]
+        #~ global_size = (self.total_channel, nb_section,)
+        #~ local_size = (1, nb_section, )
+        #~ event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
+                                #~ self.out_pgc1_cl, self.out_levels_cl, self.outs_hpaf_cl[ring_pos], self.coefficients_hpaf_cl,
+                                #~ self.zi_hpaf_cl, np.int32(nb_section))
+        #~ event.wait()
+        #TODO ici:
+        mwgs = self.ctx.devices[0].get_info(pyopencl.device_info.MAX_WORK_GROUP_SIZE)
+        global_size = (self.total_channel, self.chunksize, )
+        local_size = (1, mwgs, )
+        event = self.opencl_prg.dynamic_gain(self.queue, global_size, local_size,
+                                self.out_pgc1_cl, self.out_levels_cl, self.outs_dyngain_cl[ring_pos], self.gain_controlled_cl)
         event.wait()
+
+        
+        
+        
+        
         
         
         if self.debug_mode:
-            pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.outs_hpaf_cl[ring_pos])
+            pyopencl.enqueue_copy(self.queue,  self.out_dyngain, self.outs_dyngain_cl[ring_pos])
             #~ self.outputs['hpaf'].send(self.out_hpaf.T, index=pos)
-            returns['hpaf'] = (pos, self.out_hpaf.T)
+            returns['dyngain'] = (pos, self.out_dyngain.T)
         
         pos2 = pos - self.backward_chunksize + self.chunksize
         #~ print('ici', 'pos', pos,  'pos2', pos2)
@@ -262,7 +261,7 @@ class InvComp(BaseMultiBand):
             for i in range(self.backward_ratio):
                 rp = (chunkcount - i-1) % self.backward_ratio
                 event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
-                                        self.outs_hpaf_cl[rp], self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
+                                        self.outs_dyngain_cl[rp], self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
                 event.wait()
             
             

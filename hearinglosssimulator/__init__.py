@@ -17,6 +17,7 @@ from .filterfactory import *
 from .cgcfilter import *
 from .soundgenerator import *
 from .invcgc import *
+from .invcomp import *
 from .offlinehelper import *
 
 try:

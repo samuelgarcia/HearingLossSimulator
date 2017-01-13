@@ -228,7 +228,8 @@ def make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample
         for l, level in enumerate(levels):
             filter = np.concatenate([pgc_1000Hz, hpaf_1000Hz[l, : , : ],pgc_1000Hz], axis = 0)
             w, h = sosfreqz(filter, worN =NFFT)
-            gains[l] = np.max(20*np.log10(np.abs(h)))
+            #~ gains[l] = np.max(20*np.log10(np.abs(h)))
+            gains[l] = np.max(np.abs(h))
         gain_controlled_by_alpha[alpha] = gains
     
     

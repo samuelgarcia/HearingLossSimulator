@@ -173,6 +173,21 @@ __kernel void reset_zis(__global  float *zis){
 
 
 
+__kernel void dynamic_gain(__global  float *input, __global  float * levels, __global  float *output, __global float *gain_controlled) {
+    
+    int chan = get_global_id(0); //channel indice
+    int pos = get_global_id(1); //sample index
+    
+    int offset_buf = chan*chunksize;
+    int gainindex = (int) (levels[offset_buf+pos]/levelstep);
+    output[offset_buf+pos] = input[offset_buf+pos] * gain_controlled[chan*nb_level+gainindex];
+    
+}
+
+
+
+
+
 __kernel void transpose_and_repeat_channel(__global float *inbuffer, __global float *output,  int shape_in_1,   int nb_repeat){
 
     int r = get_global_id(0);

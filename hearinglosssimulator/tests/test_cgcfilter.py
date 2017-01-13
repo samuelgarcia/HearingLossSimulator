@@ -82,7 +82,8 @@ def test_invcomp_filter():
     
     for f, freq in enumerate(freqs):
         #~ gains = np.zeros(len(levels))
-        gains = gain_controlled[f]
+        gains = 20*np.log10(gain_controlled[f])
+        
         #~ for l, level in enumerate(levels):
             
             #~ all_filter = np.concatenate([coefficients_pgc[f,:,:], coefficients_pgc[f,:,:]], axis = 0)
@@ -109,6 +110,6 @@ def test_invcomp_filter():
     
     
 if __name__ == '__main__':
-    test_cgc_filter()
+    #~ test_cgc_filter()
     test_invcomp_filter()
     

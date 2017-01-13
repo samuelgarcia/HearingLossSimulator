@@ -52,7 +52,7 @@ class BaseMultiBand:
 
     
     def configure(self, nb_freq_band=16, low_freq = 100., high_freq = 15000.,
-                tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
+                tau_level = 0.005,  level_step =1., level_max = 120., #smooth_time = 0.0005,
                 calibration =  93.979400086720375,
                 loss_params = {},
                 chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False):
@@ -105,7 +105,7 @@ class BaseMultiBand:
         self.low_freq = low_freq
         self.high_freq = high_freq
         self.tau_level = tau_level
-        self.smooth_time = smooth_time
+        #~ self.smooth_time = smooth_time
         self.level_step = level_step
         self.level_max = level_max
         self.calibration = calibration
