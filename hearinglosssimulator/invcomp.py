@@ -28,9 +28,10 @@ with open(cl_code_filename, mode='r') as f:
 
 
 
-class InvCGC(BaseMultiBand):
+class InvComp(BaseMultiBand):
     """
-    Class for computing the InvCGC filter bank.
+    Class for computing a variante of InvCGC : 
+    the moving HPAF filter is replace by a pure gain level dependant (InvComp) stage.
     
     """    
     
@@ -62,19 +63,21 @@ class InvCGC(BaseMultiBand):
         #~ print(self.passive_gain)
         #~ exit()
         
-        
-        
-        #TODO : this is for debug only
-        compression_degree = [0.] * len(self.freqs)
+        # We compute the gain leveled controlled (InvComp) stage with
+        # the same dynamic than CGC filter (PGC+HPAF+PGC)
         
         self.coefficients_pgc = [None]*self.nb_channel
-        self.coefficients_hpaf = [None]*self.nb_channel
+        self.gain_controlled = [None]*self.nb_channel
         for c, chan in enumerate(channels):
-            self.coefficients_pgc[c], self.coefficients_hpaf[c], levels, band_overlap_gain = make_cgc_filter(self.freqs, compresison_degree_all[chan],
+            self.coefficients_pgc[c], self.gain_controlled[c], levels, band_overlap_gain = make_invcomp_filter(self.freqs, compresison_degree_all[chan],
                                         self.level_max, self.level_step, self.sample_rate, dtype=self.dtype)
             print(chan, 'band_overlap_gain', band_overlap_gain)
+        
         self.coefficients_pgc = np.concatenate(self.coefficients_pgc, axis =0)
-        self.coefficients_hpaf = np.concatenate(self.coefficients_hpaf, axis =0)
+        self.gain_controlled = np.gain_controlled(self.coefficients_hpaf, axis =0)
+        
+        print('self.gain_controlled.shape',self.gain_controlled.shape)
+        exit()
         
         self.band_overlap_gain = band_overlap_gain
         self.levels = levels

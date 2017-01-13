@@ -25,6 +25,21 @@ def gammatone(freqs, sample_rate, b=1.019, erb_order=1, ear_Q=9.26449, min_bw=24
     #~ print erb
     B = b*2*pi*erb
 #        B = 2*pi*b
+    #~ B = B.astype('float128')
+    #~ print('B', type(B), B.dtype)
+    #~ print('T', type(T))
+    #~ print('2*B*T', type(2*B*T), (2*B*T).dtype)
+    #~ print('2*B*T', 2*B*T)
+    #~ T = np.float64(T)
+    #~ B = float(B)
+    #~ i=1j
+    #~ print('yep1')
+    #~ yep1 = exp(2*B*T)
+    #~ print('yep2')
+    #~ yep2 = exp(4*i*cf*pi*T)
+    #~ print('hooooo')
+    
+    
     
     i=1j
     gain=abs((-2*exp(4*i*cf*pi*T)*T+2*exp(-(B*T)+2*i*cf*pi*T)*T*(cos(2*cf*pi*T)-sqrt(3-2**(3./2))*sin(2*cf*pi*T)))*(-2*exp(4*i*cf*pi*T)*T+\
