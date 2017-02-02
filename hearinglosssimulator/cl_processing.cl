@@ -108,7 +108,8 @@ __kernel void estimate_leveldb(__global  float *input, __global  float *outlevel
         
         //to dB and index dB
         avlevel = (20*log10(avlevel) + calibration);
-        if (avlevel>=levelmax) avlevel = levelmax-levelstep;
+        //if (avlevel>=levelmax) avlevel = levelmax-levelstep;
+        if (avlevel>levelmax) avlevel = levelmax;
         if (avlevel<0.0f) avlevel = 0.0f;
         //outlevels[offset_buf+s] = avlevel/levelstep;
         outlevels[offset_buf+s] = avlevel;
