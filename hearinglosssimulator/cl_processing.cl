@@ -3,7 +3,7 @@
 #define chunksize %(chunksize)d
 
 #define nb_level %(nb_level)d
-#define levelavgsize %(levelavgsize)d
+
 #define calibration %(calibration)8.4f
 #define levelstep %(levelstep)8.4f
 #define levelmax %(levelmax)d
@@ -78,41 +78,53 @@ __kernel void backward_filter(__global  float *input, __global  float *output, _
 
 
 
+/*
+    //int offset_level = chan*levelavgsize;
+    
+    //int pos = ((chunksize*chunkcount-1)%%levelavgsize);
+
+    //float prevlevel = previouslevel[offset_level+pos];
+    //float prevlevel = previouslevel[offset_level];
+
+
+        //for (int k=levelavgsize-1; k>0; k--) previouslevel[offset_level+k] = previouslevel[offset_level+k-1];
+
+        //pos += 1;
+        //if (pos == levelavgsize) pos=0;
+        //previouslevel[offset_level+pos] = prevlevel;
+
+        //average on a window
+        //avlevel = 0.0;
+        //for (int k=0; k<levelavgsize; k++) avlevel += (previouslevel[offset_level+k]);
+        //avlevel /= levelavgsize;
+
+        //if (avlevel>=levelmax) avlevel = levelmax-levelstep;
+
+*/
 
 __kernel void estimate_leveldb(__global  float *input, __global  float *outlevels, __global float *previouslevel, __constant float *expdecays, long chunkcount) {
 
     int chan = get_global_id(0);
     
     int offset_buf = chan*chunksize;
-    int offset_level = chan*levelavgsize;
-    
-    int pos = ((chunksize*chunkcount-1)%%levelavgsize);
-
-    float prevlevel = previouslevel[offset_level+pos];
-    float avlevel;
+    float level = previouslevel[chan];
+    float db_level;
     float expdecay = expdecays[chan];
     
     for (int s=0; s<chunksize;s++) {
-        //for (int k=levelavgsize-1; k>0; k--) previouslevel[offset_level+k] = previouslevel[offset_level+k-1];
         
-        prevlevel = max( fabs(input[offset_buf+s]), prevlevel*expdecay);
-        pos += 1;
-        if (pos == levelavgsize) pos=0;
-        previouslevel[offset_level+pos] = prevlevel;
         
-        //average on a window
-        avlevel = 0.0;
-        for (int k=0; k<levelavgsize; k++) avlevel += (previouslevel[offset_level+k]);
-        avlevel /= levelavgsize;
-        //avlevel = prevlevel;
+        level = max( fabs(input[offset_buf+s]), level*expdecay);
+        previouslevel[chan] = level;
         
         //to dB and index dB
-        avlevel = (20*log10(avlevel) + calibration);
-        //if (avlevel>=levelmax) avlevel = levelmax-levelstep;
-        if (avlevel>levelmax) avlevel = levelmax;
-        if (avlevel<0.0f) avlevel = 0.0f;
-        //outlevels[offset_buf+s] = avlevel/levelstep;
-        outlevels[offset_buf+s] = avlevel;
+        db_level = (20*log10(level) + calibration);
+        
+        //clip
+        if (db_level>levelmax) db_level = levelmax;
+        if (db_level<0.0f) db_level = 0.0f;
+        
+        outlevels[offset_buf+s] = db_level;
     }
 }
 

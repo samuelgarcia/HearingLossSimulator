@@ -83,7 +83,7 @@ class InvComp(BaseMultiBand):
         # make decays per band
         samedecay = np.exp(-2./self.tau_level/self.sample_rate)
         # same decay for all band
-        self.expdecays = np.ones((self.nb_freq_band), dtype = self.dtype) * samedecay
+        self.expdecays = np.ones((self.total_channel, ), dtype = self.dtype) * samedecay
         # one decay per band (for testing)
         #~ self.expdecays=  np.exp(-2.*self.freqs/nbcycle_decay/self.sample_rate).astype(self.dtype)
     
@@ -99,8 +99,9 @@ class InvComp(BaseMultiBand):
         self.zi_pgc1 = np.zeros((self.total_channel, self.coefficients_pgc.shape[1], 2), dtype= self.dtype)
         
         #~ smooth_sample = int(self.sample_rate*self.smooth_time)
-        smooth_sample = 1
-        self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
+        #~ smooth_sample = 1
+        #~ self.previouslevel = np.zeros((self.total_channel, smooth_sample), dtype = self.dtype)
+        self.previouslevel = np.zeros((self.total_channel,), dtype = self.dtype)
         self.out_levels = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         
         #~ self.out_hpaf = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
@@ -140,7 +141,7 @@ class InvComp(BaseMultiBand):
         # compialtion
         kernel = cl_code%dict(chunksize=self.chunksize,
                                             nb_level=len(self.levels),
-                                            levelavgsize=smooth_sample,
+                                            #~ levelavgsize=smooth_sample,
                                             calibration=self.calibration,
                                             levelstep=self.level_step,
                                             levelmax=self.level_max,

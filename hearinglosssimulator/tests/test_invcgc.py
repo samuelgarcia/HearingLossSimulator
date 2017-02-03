@@ -62,6 +62,17 @@ def test_invcgc():
     out_buffer = online_arrs['main_output']
     ax[-1].plot(out_buffer[:, 0], color = 'k')
     
+    if nb_channel==2:
+        #test stereo is like mono
+        #~ fig, ax = plt.subplots()
+        #~ ax.plot(out_buffer[:,0], color='b')
+        #~ ax.plot(out_buffer[:,1], color='r')
+        #~ fig, ax = plt.subplots()
+        #~ ax.plot(out_buffer[:,0]-out_buffer[:,1], color='b')
+        #~ plt.show()
+        assert np.all(np.abs(out_buffer[:,0]-out_buffer[:,1])<1e-5)
+    
+    
     plt.show()
     
 

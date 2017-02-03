@@ -99,6 +99,8 @@ def test_invcomp_filter():
         #~ ax2.axvline(freq, color='k')
         
         ax1.plot(levels, levels+gains, label='{:0.1f}'.format(freq), color=freqs_colors[f])
+        #~ ax1.plot(levels, gains, label='{:0.1f}'.format(freq), color=freqs_colors[f])
+        
     ax1.plot(levels,levels, color='r', ls='--')
         
         
