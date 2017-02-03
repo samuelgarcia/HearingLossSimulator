@@ -49,9 +49,12 @@ class BaseMultiBand:
         self.queue = pyopencl.CommandQueue(self.ctx)
         print(self.ctx)
 
-
     
-    def configure(self, nb_freq_band=16, low_freq = 100., high_freq = 15000.,
+    def configure(self, **kargs):
+        self.configuration_kargs = dict(kargs)
+        self._configure(**kargs)
+    
+    def _configure(self, nb_freq_band=16, low_freq = 100., high_freq = 15000.,
                 tau_level = 0.005,  level_step =1., level_max = 120., #smooth_time = 0.0005,
                 calibration =  93.979400086720375,
                 loss_params = {},
