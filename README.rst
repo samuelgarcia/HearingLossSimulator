@@ -27,6 +27,8 @@ Here the block diagram of the algorithm:
 .. image:: doc/source/img/processing_diagram.png
 
 
+This research was supported by the French National Research Funding Agency (CONTINT 2013, ANR-13-CORD-0001, project Aida)
+
 
 Ref:
  * Irino,T. and and Patterson,R.D. : IEEE Trans.ASLP, Vol.14, Nov. 2006.

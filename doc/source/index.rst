@@ -3,6 +3,8 @@ HearingLossSimulator
 
 Near real time hearing loss simulator in python based on an Inverse Compressive Gammachirp. 
 
+This research was supported by the French National Research Funding Agency (CONTINT 2013, ANR-13-CORD-0001, project Aida)
+
 
 Documentation:
    http://hearinglosssimulator.readthedocs.io/
