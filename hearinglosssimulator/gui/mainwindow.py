@@ -152,10 +152,13 @@ class MainWindow(QtGui.QMainWindow):
     def filename(self):
         if sys.platform.startswith('win'):
             dirname = os.path.join(os.environ['APPDATA'], 'HearingLossSimulator')
+        elif  sys.platform.startswith('darwin'):
+            dirname = '~/Library/Application Support/HearingLossSimulator/'
         else:
             dirname = os.path.expanduser('~/.config/HearingLossSimulator')
+            
         if not os.path.exists(dirname):
-            os.mkdir(dirname)
+            os.makedirs(dirname)
         filename = os.path.join(dirname, 'configuration.json')
         return filename
     
