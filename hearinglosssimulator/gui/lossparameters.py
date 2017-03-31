@@ -63,6 +63,8 @@ def plot_hearingloss(ax, hearing_level, compression_loss):
         ax.set_xlim(0,n)
         ax.set_ylim(120., -20.)
         
+        ax.set_aspect(1./20)
+        
         return lines
 
 
