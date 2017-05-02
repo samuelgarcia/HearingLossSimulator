@@ -51,9 +51,13 @@ def make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate, dty
         if time_stats:
             duration = time.perf_counter() - start0
             time_durations = np.array(time_durations)
-            print('buffer duration {:0.3f}s total compute {:0.3f}s  speed {:0.1f}'.format(buffer_size/sample_rate, duration, buffer_size/sample_rate/duration))
+            print('buffer duration {:0.3f}s total compute {:0.3f}s  speed {:0.1f}'.format(buffer_size/sample_rate,
+                                                                            duration, buffer_size/sample_rate/duration))
             print('chunksize time:  {:0.1f}ms nloop {}'.format(chunksize/sample_rate*1000, time_durations.size))
-            print('Compute time Mean: {:0.1f}ms Min: {:0.1f}ms Max: {:0.1f}ms'.format( time_durations.mean()*1000., time_durations.min()*1000., time_durations.max()*1000.))
+            print('Compute time Mean: {:0.1f}ms Min: {:0.1f}ms Max: {:0.1f}ms'.format( time_durations.mean()*1000.,
+                                                                            time_durations.min()*1000., time_durations.max()*1000.))
+            nb_too_slow = np.sum(time_durations>(chunksize/sample_rate))
+            print('nb_too_slow {}  ({:0.1f}%)'.format(nb_too_slow, nb_too_slow/time_durations.size*100.))
     
     
     return processing, loop

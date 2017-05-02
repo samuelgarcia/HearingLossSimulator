@@ -5,18 +5,21 @@ import hearinglosssimulator as hls
 
 #~ exit()
 
-#~ nb_channel = 2
-nb_channel = 1
+nb_channel = 2
+#~ nb_channel = 1
 
 sample_rate =44100.
+#~ sample_rate =30000.
 
 #~ chunksize = 256
-#~ chunksize = 512
-chunksize = 1024
+chunksize = 512
+#~ chunksize = 1024
 #~ chunksize = 2048
 backward_chunksize = chunksize*2
 #~ backward_chunksize = chunksize*5
 #~ backward_chunksize = chunksize*4
+
+backward_chunksize = 1536
 
 nloop = 100
 
@@ -43,7 +46,11 @@ processing_conf = dict(nb_freq_band=32, level_step=4, loss_params=loss_params,
 #~ node, online_arrs = hls.run_one_node_offline(hls.MainProcessing, in_buffer, chunksize, 
                 #~ sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
 
-processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate,
-            processing_conf=processing_conf, buffersize_margin=backward_chunksize,
-             time_stats=True)
+
+for _class in [hls.InvCGC, hls.InvComp]:
+    print()
+    print(_class.__name__)
+    processing, online_arrs = hls.run_one_class_offline(_class, in_buffer, chunksize, sample_rate,
+                processing_conf=processing_conf, buffersize_margin=backward_chunksize,
+                 time_stats=True)
 
