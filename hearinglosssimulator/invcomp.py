@@ -219,8 +219,9 @@ class InvComp(BaseMultiBand):
         #~ event.wait()
         #TODO ici:
         mwgs = self.ctx.devices[0].get_info(pyopencl.device_info.MAX_WORK_GROUP_SIZE)
+        #~ print(mwgs)
         global_size = (self.total_channel, self.chunksize, )
-        local_size = (1, mwgs, )
+        local_size = (1, min(mwgs, self.chunksize), )
         event = self.opencl_prg.dynamic_gain(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.outs_dyngain_cl[ring_pos], self.gain_controlled_cl)
         event.wait()
