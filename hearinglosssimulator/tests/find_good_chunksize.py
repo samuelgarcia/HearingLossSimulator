@@ -40,13 +40,13 @@ def plot_residual():
     in_buffer = np.tile(in_buffer[:, None],(1, nb_channel))
     
     
-    #~ side_chunksize = np.linspace(0,1024, 5).astype(int)
-    side_chunksize = np.arange(7).astype(int) * chunksize
+    #~ lost_chunksize = np.linspace(0,1024, 5).astype(int)
+    lost_chunksize = np.arange(7).astype(int) * chunksize
     
     #~ backward_chunksizes = [512,1024,1536,2048]
     #~ backward_chunksizes = [1024,1536,2048]
     #~ backward_chunksizes = np.linspace(1024,2048, 5).astype(int)
-    backward_chunksizes =  side_chunksize + chunksize
+    backward_chunksizes =  lost_chunksize + chunksize
     
     
     
@@ -55,10 +55,19 @@ def plot_residual():
     
     for i, backward_chunksize in enumerate(backward_chunksizes):
         print('backward_chunksize', backward_chunksize)
+        loss_params = {  'left' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 8000.],
+                                            'compression_degree': [0., 0., 0., 0., 0., 0., 0.],
+                                            'passive_loss_db' : [0., 0., 0., 0., 0., 0., 0.],
+                                        }}
         processing_conf = dict(nb_freq_band=nb_freq_band, low_freq = 40., high_freq = 500.,
-                    level_max=120, level_step=120, debug_mode=True, 
-                    chunksize=chunksize, backward_chunksize=backward_chunksize)
-        processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+                    level_max=100, level_step=100, debug_mode=True, 
+                    chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
+        
+        processing = hls.InvCGC(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+        online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32', 
+                                buffersize_margin=backward_chunksize)
+
+        #~ processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
         #~ freq_band = 2
     
@@ -86,9 +95,9 @@ def plot_residual():
         ax.set_xticks(np.arange(processing.freqs.size))
         ax.set_xticklabels(['{:0.0f}'.format(f) for f in processing.freqs])
         ax.set_yticks(np.arange(len(backward_chunksizes)))
-        ax.set_yticklabels(['{}'.format(f) for f in side_chunksize])
+        ax.set_yticklabels(['{}'.format(f) for f in lost_chunksize])
         ax.set_xlabel('freq')
-        ax.set_ylabel('side_chunksize')
+        ax.set_ylabel('lost_chunksize')
         
         return im
 

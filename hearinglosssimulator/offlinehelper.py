@@ -9,18 +9,19 @@ except ImportError:
 
 
 from .invcgc import InvCGC
+from .invcomp import InvComp
+
+_default_precessing_class = InvComp
 
 
 
-def make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate, dtype='float32', 
+
+def make_processing_loop(processing, in_buffer, chunksize, sample_rate, dtype='float32', 
             processing_conf={}, buffersize_margin=0, time_stats=True):
     
     nb_channel = in_buffer.shape[1]
     buffer_size = in_buffer.shape[0]
     buffer_size2 = in_buffer.shape[0] + buffersize_margin
-    
-    
-    processing = ProcessingClass(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **processing_conf)
     
     def loop():
         if time_stats:
@@ -51,7 +52,7 @@ def make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate, dty
         if time_stats:
             duration = time.perf_counter() - start0
             time_durations = np.array(time_durations)
-            print('buffer duration {:0.3f}s total compute {:0.3f}s  speed {:0.1f}'.format(buffer_size/sample_rate,
+            print('buffer duration {:0.3f}s total compute {:0.3f}s  speed {:0.2f}'.format(buffer_size/sample_rate,
                                                                             duration, buffer_size/sample_rate/duration))
             print('chunksize time:  {:0.1f}ms nloop {}'.format(chunksize/sample_rate*1000, time_durations.size))
             print('Compute time Mean: {:0.1f}ms Min: {:0.1f}ms Max: {:0.1f}ms'.format( time_durations.mean()*1000.,
@@ -60,13 +61,14 @@ def make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate, dty
             print('nb_too_slow {}  ({:0.1f}%)'.format(nb_too_slow, nb_too_slow/time_durations.size*100.))
     
     
-    return processing, loop
+    return loop
+
+
+def run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32', 
+            buffersize_margin=0, time_stats=True):
     
-def run_one_class_offline(ProcessingClass, in_buffer, chunksize, sample_rate, dtype='float32', 
-            processing_conf={}, buffersize_margin=0, time_stats=True):
-    
-    processing, loop = make_processing_loop(ProcessingClass, in_buffer, chunksize, sample_rate,  dtype=dtype, 
-            processing_conf=processing_conf, buffersize_margin=buffersize_margin, time_stats=time_stats)
+    loop = make_processing_loop(processing, in_buffer, chunksize, sample_rate,  dtype=dtype, 
+            buffersize_margin=buffersize_margin, time_stats=time_stats)
     
     buffer_size = in_buffer.shape[0]
     
@@ -81,20 +83,31 @@ def run_one_class_offline(ProcessingClass, in_buffer, chunksize, sample_rate, dt
                 if online_arrs[k][pos-out_chunk.shape[0]:pos, :].shape[0]==out_chunk.shape[0]:
                     online_arrs[k][pos-out_chunk.shape[0]:pos, :] = out_chunk
     
+    return online_arrs
+
+
+
+#TODO remove this soon
+def run_class_offline(processing_class, in_buffer, chunksize, sample_rate, dtype='float32', 
+            processing_conf={}, buffersize_margin=0, time_stats=True):
+    print('DO NOT USE THIS FUNCTION ANYMORE but run_instance_offline')
+    nb_channel = in_buffer.shape[1]
+    processing = processing_class(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **processing_conf)
+    online_arrs = run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype=dtype, 
+            buffersize_margin=buffersize_margin, time_stats=time_stats)
     return processing, online_arrs
-    
 
 
-def compute_numpy(sound, sample_rate, **params):
+def compute_numpy(sound, sample_rate, processing_class=_default_precessing_class, **params):
     """
-    Run InvCGC offline on a numpy buffer.
+    Run InvCGC or InvComp offline on a numpy buffer.
     
     Parameters
     ---
         sound: sound shape (len, nb_channel)
         sample_rate: the sample rate
-        **params: see `InvCGC`.`configure()`
-        
+        processing_class= InvComp or InvCGC
+        **params: see `InvComp`.`configure()`
         
     """
     assert isinstance(sound, np.ndarray)
@@ -106,12 +119,18 @@ def compute_numpy(sound, sample_rate, **params):
         onedim = False
     
     sound = sound.astype('float32')
+    nb_channel = sound.shape[1]
 
     chunksize = params['chunksize']
     backward_chunksize =  params['backward_chunksize']
     
-    processing, online_arrs = run_one_class_offline(InvCGC, sound, chunksize, sample_rate, processing_conf=params, dtype='float32', 
+    processing = processing_class(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **params)
+    online_arrs = run_instance_offline(processing, sound, chunksize, sample_rate, dtype='float32', 
             buffersize_margin=backward_chunksize, time_stats=False)
+    
+    
+    #~ processing, online_arrs = run_class_offline(_default_precessing_class, sound, chunksize, sample_rate, processing_conf=params, dtype='float32', 
+            #~ buffersize_margin=backward_chunksize, time_stats=False)
 
     out_sound = online_arrs['main_output']
     
@@ -143,16 +162,17 @@ class WaveNumpy:
         
         
 
-def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
+def compute_wave_file(in_filename, out_filename, duration_limit=None, processing_class=_default_precessing_class,  **params):
     """
-    Run InvCGC offline on a wave file.
+    Run InvCGC/InvComp offline on a wave file.
     
     Parameters
     ---
         in_filename: input file name
         out_filename: output file name
         duration_limit: clip the duration. None (default) means all the file.
-        **params: see `InvCGC`.`configure()`
+        processing_class= InvComp or InvCGC
+        **params: see `InvComp`.`configure()`
         
         
     """    
@@ -171,8 +191,9 @@ def compute_wave_file(in_filename, out_filename, duration_limit=None, **params):
     if len(params['loss_params'])<nb_channel:
         params['loss_params']['right'] = dict(params['loss_params']['left'])
     
+    processing = processing_class(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **params)
     
-    processing, loop = make_processing_loop(InvCGC, in_buffer, chunksize, sample_rate, dtype='float32', 
+    loop = make_processing_loop(processing, in_buffer, chunksize, sample_rate, dtype='float32', 
             processing_conf=params, buffersize_margin=0, time_stats=False)
     
     for i, returns in enumerate(loop()):

@@ -32,11 +32,9 @@ params = dict(
     )
 
 
-processing = hls.InvCGC(nb_channel=nb_channel, sample_rate=sample_rate,
+processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate,
         dtype='float32', apply_configuration_at_init=False, **params)
-processing.make_filters()
-processing.create_opencl_context(gpu_platform_index = None, gpu_device_index = None)
-processing.initlalize_cl()
+processing.initialize()
 
 
 # define the callback audio wire

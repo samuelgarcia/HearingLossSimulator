@@ -58,7 +58,7 @@ dev.initialize()
 
 
 ng1.register_node_type_from_module('hearinglosssimulator', 'InvCGCNode')
-node = ng1.create_node('InvCGCNode')
+node = ng1.create_node('HLSNode')
 node.configure(**params)
 
 #~ ng1.register_node_type_from_module('hearinglosssimulator', 'DoNothing')

@@ -112,6 +112,6 @@ def test_invcomp_filter():
     
     
 if __name__ == '__main__':
-    #~ test_cgc_filter()
-    test_invcomp_filter()
+    test_cgc_filter()
+    #~ test_invcomp_filter()
     

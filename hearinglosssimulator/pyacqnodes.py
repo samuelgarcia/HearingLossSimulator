@@ -138,8 +138,8 @@ class BasePyacqNode(BaseProcessingNode):
 
 from .invcgc import InvCGC
 
-class InvCGCNode(BasePyacqNode):
-    _processing_class = InvCGC
+class HLSNode(BasePyacqNode):
+    _processing_class = InvComp
 
     def online_configure(self, **params):
         
@@ -151,7 +151,7 @@ class InvCGCNode(BasePyacqNode):
         self.processing.configure(**params)
         t1 = time.perf_counter()
         print(t1-t0)
-        self.processing.make_filters()
+        self.processing._load_or_make_filters()
         t2 = time.perf_counter()
         print(t2-t1)
         with self.mutex:        

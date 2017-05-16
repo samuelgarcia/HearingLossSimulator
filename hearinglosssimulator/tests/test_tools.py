@@ -17,5 +17,5 @@ def test_play_on_device():
 
 
 if __name__ == '__main__':
-    test_play_with_vlc()
-    #~ test_play_on_device()
+    #~ test_play_with_vlc()
+    test_play_on_device()

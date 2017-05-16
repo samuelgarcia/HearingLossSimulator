@@ -10,8 +10,8 @@ import helper
 
 #~ exit()
 
-nb_channel = 2
-#~ nb_channel = 1
+#~ nb_channel = 2
+nb_channel = 1
 
 sample_rate =44100.
 
@@ -40,7 +40,7 @@ def test_invcgc():
     loss_params['right'] = loss_params['left']
     processing_conf = dict(nb_freq_band=32, level_step=4, loss_params=loss_params, 
                 debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     
     print('nlevel', processing.levels.size, 'nb_freq_band', processing.nb_freq_band)
@@ -85,7 +85,7 @@ def test_pgc1():
     loss_params['right'] = loss_params['left']
 
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     n = processing.nb_freq_band
     in_buffer2 = np.tile(in_buffer,(1, processing.nb_freq_band))
@@ -122,7 +122,7 @@ def test_levels():
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     freq_band = 2
     
@@ -170,7 +170,7 @@ def test_hpaf():
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     #~ assert len(processing.levels)==1
     freq_band = 2
@@ -214,7 +214,7 @@ def test_pgc2():
                 low_freq = 60., high_freq = 15000.,
                 loss_params = loss_params,
                 chunksize=chunksize, backward_chunksize=backward_chunksize)
-    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     freq_band = 4
     
@@ -258,7 +258,7 @@ def test_passive_loss():
     loss_params['right'] = loss_params['left']
 
     processing_conf = dict(nb_freq_band=32, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_one_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
     n = processing.nb_freq_band
     
@@ -294,12 +294,12 @@ def test_passive_loss():
     
     
 if __name__ =='__main__':
-    test_invcgc()
+    #~ test_invcgc()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_hpaf()
     #~ test_pgc2()
-    #~ test_passive_loss()
+    test_passive_loss()
     
 
 

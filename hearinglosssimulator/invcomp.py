@@ -160,8 +160,6 @@ class InvComp(BaseMultiBand):
         self.kern_reset_zis = getattr(self.opencl_prg, 'reset_zis')
         self.kern_backward_filter = getattr(self.opencl_prg, 'backward_filter')
 
-        
-
 
     def proccesing_func(self, pos, data):
         

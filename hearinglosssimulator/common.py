@@ -59,8 +59,8 @@ class BaseMultiBand:
         self.configuration_kargs = dict(kargs)
         self._configure(**kargs)
     
-    def _configure(self, nb_freq_band=16, low_freq = 100., high_freq = 15000.,
-                tau_level = 0.005,  level_step =1., level_max = 120., #smooth_time = 0.0005,
+    def _configure(self, nb_freq_band=32, low_freq = 100., high_freq = 15000.,
+                tau_level = 0.005,  level_step =1., level_max = 100.,
                 calibration =  93.979400086720375,
                 loss_params = {},
                 chunksize=512, backward_chunksize=1024, debug_mode=False, bypass=False):
@@ -108,6 +108,8 @@ class BaseMultiBand:
         Hz have a passive loss.
         
         """
+        
+        assert high_freq<self.sample_rate/2., 'high_freq is hiher that nyquist (sample_rate/2)'
         
         self.nb_freq_band = nb_freq_band
         self.low_freq = low_freq
@@ -157,18 +159,21 @@ class BaseMultiBand:
             d = pickle.load(f)
         for k in self._attr_to_save:
             setattr(self, k, d[k])
-
-    def initialize(self):
+    
+    def _load_or_make_filters(self):
+        filename = self._get_filter_cache_filename()
+        if os.path.exists(filename):
+            self._load_filters()
+            print('Load cache for filters', self.__class__.__name__, )
+        else:
+            print('Save cache for filters', self.__class__.__name__)
+            self.make_filters()
+            self._save_filters()
         
+    
+    def initialize(self):
         if self.use_filter_cache and self._attr_to_save is not None:
-            filename = self._get_filter_cache_filename()
-            if os.path.exists(filename):
-                self._load_filters()
-                print('Load cache for filters', self.__class__.__name__, )
-            else:
-                print('Save cache for filters', self.__class__.__name__)
-                self.make_filters()
-                self._save_filters()
+            self._load_or_make_filters()
         else:
             self.make_filters()
         

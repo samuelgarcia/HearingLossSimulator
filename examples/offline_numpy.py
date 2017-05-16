@@ -27,8 +27,10 @@ loss_params = {  'left' : {'freqs' :  [125., 250., 500., 1000., 2000., 4000., 80
 
 # compute the sound numpy buffer
 out_sound = hls.compute_numpy(in_sound, sample_rate,
-        nb_freq_band=16, low_freq = 100., high_freq = 15000.,
-        tau_level = 0.005, smooth_time = 0.0005, level_step =1., level_max = 120.,
+        #~ processing_class=hls.InvComp,
+        processing_class=hls.InvCGC,
+        nb_freq_band=32, low_freq = 100., high_freq = 15000.,
+        tau_level = 0.005, level_step =1., level_max = 100.,
         calibration =  93.979400086720375,
         loss_params = loss_params,
         chunksize=512, backward_chunksize=512*4, 
