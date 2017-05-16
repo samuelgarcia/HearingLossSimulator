@@ -1,4 +1,7 @@
 import numpy as np
+import joblib
+import os
+import pickle
 
 # this make readthedocs work
 try:
@@ -14,8 +17,10 @@ class BaseMultiBand:
     Common class hierited by InvCGC and InvComp.
     Both are multi band filter bank.
     """
+    _attr_to_save = None
+    
     def __init__(self, nb_channel=1, sample_rate=44100., dtype='float32',
-                apply_configuration_at_init=True, **params):
+                apply_configuration_at_init=True, use_filter_cache=True, **params):
         """
         Parameters:
             nb_channel (int) : 1 or 2 for mono/stereo
@@ -29,14 +34,14 @@ class BaseMultiBand:
         self.nb_channel = nb_channel
         self.sample_rate = sample_rate
         self.dtype = np.dtype(dtype)
+        
+        self.use_filter_cache = use_filter_cache
 
         self.configure(**params)
         
         if apply_configuration_at_init:
-            self.make_filters()
-            self.create_opencl_context()
-            self.initlalize_cl()
-
+            self.initialize()
+    
     def create_opencl_context(self, gpu_platform_index=None, gpu_device_index=None):
         self.gpu_platform_index = gpu_platform_index
         self.gpu_device_index = gpu_device_index
@@ -122,6 +127,55 @@ class BaseMultiBand:
         
         self.bypass = bypass
         self.debug_mode = debug_mode
+
+    def _get_filter_cache_filename(self):
+        d = {}
+        d.update(self.configuration_kargs)
+        d.update({'nb_channel' : self.nb_channel, 'sample_rate':self.sample_rate, 'dtype' : self.dtype.str})
+        hash = joblib.hash(d)
+        
+        #TODO put this somewhere esle
+        cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache_filters')
+        
+        filename = os.path.join(cache_dir, self.__class__.__name__, hash)
+        return filename
+
+    def _save_filters(self):
+        
+        filename = self._get_filter_cache_filename()
+        dir = os.path.dirname(filename)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        
+        d = { k:getattr(self, k) for k in self._attr_to_save }
+        with open(filename, mode='wb') as f:
+            pickle.dump(d, f)
+    
+    def _load_filters(self):
+        filename = self._get_filter_cache_filename()
+        with open(filename, mode='rb') as f:
+            d = pickle.load(f)
+        for k in self._attr_to_save:
+            setattr(self, k, d[k])
+
+    def initialize(self):
+        
+        if self.use_filter_cache and self._attr_to_save is not None:
+            filename = self._get_filter_cache_filename()
+            if os.path.exists(filename):
+                self._load_filters()
+                print('Load cache for filters', self.__class__.__name__, )
+            else:
+                print('Save cache for filters', self.__class__.__name__)
+                self.make_filters()
+                self._save_filters()
+        else:
+            self.make_filters()
+        
+        self.create_opencl_context()
+        self.initlalize_cl()
+        
+        
 
     def set_bypass(self, bypass):
         self.bypass = bypass

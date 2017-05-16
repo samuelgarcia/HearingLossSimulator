@@ -32,7 +32,11 @@ class InvCGC(BaseMultiBand):
     """
     Class for computing the InvCGC filter bank.
     
-    """    
+    """
+    _attr_to_save=['total_channel', 'freqs', 'passive_gain', 
+                    'coefficients_pgc', 'coefficients_hpaf', 'band_overlap_gain', 
+                    'levels', 'expdecays']    
+    
     def make_filters(self):
         self.total_channel = self.nb_freq_band*self.nb_channel
         self.freqs = erbspace(self.low_freq,self.high_freq, self.nb_freq_band)
@@ -157,6 +161,15 @@ class InvCGC(BaseMultiBand):
                                             )
         prg = pyopencl.Program(self.ctx, kernel)
         self.opencl_prg = prg.build(options='-cl-mad-enable')
+        
+        
+        self.kern_transpose_and_repeat_channel = getattr(self.opencl_prg, 'transpose_and_repeat_channel')
+        self.kern_forward_filter = getattr(self.opencl_prg, 'forward_filter')
+        self.kern_estimate_leveldb = getattr(self.opencl_prg, 'estimate_leveldb')
+        self.kern_dynamic_sos_filter = getattr(self.opencl_prg, 'dynamic_sos_filter')
+        self.kern_reset_zis = getattr(self.opencl_prg, 'reset_zis')
+        self.kern_backward_filter = getattr(self.opencl_prg, 'backward_filter')        
+        
 
 
     def proccesing_func(self, pos, data):
@@ -188,7 +201,8 @@ class InvCGC(BaseMultiBand):
         pyopencl.enqueue_copy(self.queue,  self.in_channel_cl, data)
         global_size = (self.nb_freq_band, self.nb_channel)
         local_size = (self.nb_freq_band, 1,)
-        event = self.opencl_prg.transpose_and_repeat_channel(self.queue, global_size, local_size,
+        #~ event = self.opencl_prg.transpose_and_repeat_channel(self.queue, global_size, local_size,
+        event = self.kern_transpose_and_repeat_channel(self.queue, global_size, local_size,
                                 self.in_channel_cl, self.in_pgc1_cl, np.int32(self.nb_channel), np.int32(self.nb_freq_band))
         event.wait()
         
@@ -197,7 +211,8 @@ class InvCGC(BaseMultiBand):
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
-        event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
+        #~ event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
+        event = self.kern_forward_filter(self.queue, global_size, local_size,
                                 self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
         event.wait()
         if self.debug_mode:
@@ -210,7 +225,8 @@ class InvCGC(BaseMultiBand):
         
         global_size = (self.total_channel, )
         local_size = (1,  )
-        event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
+        #~ event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
+        event = self.kern_estimate_leveldb(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.previouslevel_cl, self.expdecays_cl, np.int64(chunkcount))  #TODO change chnkcount by pos directly
         event.wait()
         if self.debug_mode:
@@ -223,7 +239,8 @@ class InvCGC(BaseMultiBand):
         nb_section = self.coefficients_hpaf.shape[2]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
-        event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
+        #~ event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
+        event = self.kern_dynamic_sos_filter(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.outs_hpaf_cl[ring_pos], self.coefficients_hpaf_cl,
                                 self.zi_hpaf_cl, np.int32(nb_section))
         event.wait()
@@ -251,7 +268,8 @@ class InvCGC(BaseMultiBand):
         
             # pgc2
             #~ pyopencl.enqueue_copy(self.queue,  self.zi_pgc2_cl, self.zi_pgc2) # this make this by copy
-            event = self.opencl_prg.reset_zis(self.queue, (self.total_channel, ), (1, ), self.zi_pgc2_cl)
+            #~ event = self.opencl_prg.reset_zis(self.queue, (self.total_channel, ), (1, ), self.zi_pgc2_cl)
+            event = self.kern_reset_zis(self.queue, (self.total_channel, ), (1, ), self.zi_pgc2_cl)
             event.wait()
 
             nb_section = self.coefficients_pgc.shape[1]
@@ -259,7 +277,8 @@ class InvCGC(BaseMultiBand):
             local_size = (1, nb_section, )
             for i in range(self.backward_ratio):
                 rp = (chunkcount - i-1) % self.backward_ratio
-                event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
+                #~ event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
+                event = self.kern_backward_filter(self.queue, global_size, local_size,
                                         self.outs_hpaf_cl[rp], self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
                 event.wait()
             

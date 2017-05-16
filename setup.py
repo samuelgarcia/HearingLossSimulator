@@ -12,6 +12,7 @@ else:
                         'scipy',
                         'pyopencl',
                         'sounddevice',
+                        'joblib',
                         ]
     extras_require={ 'gui' : ['PyQt5', 'pyqtgraph', 'matplotlib'],
                                 'soundfile': ['soundfile'], 
