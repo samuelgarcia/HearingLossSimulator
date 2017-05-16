@@ -112,7 +112,8 @@ def test_pgc1():
         ax[1].axvline(i*chunksize)
     plt.show()
     
-    assert np.max(residual)<1e-5, 'pgc1 online differt from offline'
+    #~ print(np.argmax(residual), np.max(residual))
+    assert np.max(residual)<1e-5, 'pgc1 online differt from offline {}'.format(np.max(residual))
 
 def test_levels():
     assert nb_channel==1
@@ -297,12 +298,12 @@ def test_passive_loss():
     
     
 if __name__ =='__main__':
-    #~ test_invcomp()
+    test_invcomp()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_dyngain()
     #~ test_pgc2()
-    test_passive_loss()
+    #~ test_passive_loss()
     
 
 

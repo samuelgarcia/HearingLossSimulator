@@ -172,7 +172,7 @@ class InvCGC(BaseMultiBand):
         
 
 
-    def proccesing_func(self, pos, data):
+    def proccesing_func(self, pos, data, asynch=False):
         
         assert data.shape == (self.chunksize, self.nb_channel), 'data.shape error {} {}'.format(data.shape, (self.chunksize, self.nb_channel))
         
@@ -184,8 +184,6 @@ class InvCGC(BaseMultiBand):
             
             returns['main_output'] = (pos, data)
             return returns
-        
-        
         
         chunkcount = pos // self.chunksize
         ring_pos = (chunkcount-1) % self.backward_ratio
@@ -201,55 +199,36 @@ class InvCGC(BaseMultiBand):
         pyopencl.enqueue_copy(self.queue,  self.in_channel_cl, data)
         global_size = (self.nb_freq_band, self.nb_channel)
         local_size = (self.nb_freq_band, 1,)
-        #~ event = self.opencl_prg.transpose_and_repeat_channel(self.queue, global_size, local_size,
         event = self.kern_transpose_and_repeat_channel(self.queue, global_size, local_size,
                                 self.in_channel_cl, self.in_pgc1_cl, np.int32(self.nb_channel), np.int32(self.nb_freq_band))
-        event.wait()
+        #~ event.wait()
         
         
         #pgc1
         nb_section = self.coefficients_pgc.shape[1]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
-        #~ event = self.opencl_prg.forward_filter(self.queue, global_size, local_size,
         event = self.kern_forward_filter(self.queue, global_size, local_size,
                                 self.in_pgc1_cl, self.out_pgc1_cl, self.coefficients_pgc_cl, self.zi_pgc1_cl, np.int32(nb_section))
-        event.wait()
-        if self.debug_mode:
-            ev = pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
-            #~ self.outputs['pgc1'].send(self.out_pgc1.T, index=pos)
-            returns['pgc1'] = (pos, self.out_pgc1.T)
+        #~ event.wait()
         
         
         #levels
         
         global_size = (self.total_channel, )
         local_size = (1,  )
-        #~ event = self.opencl_prg.estimate_leveldb(self.queue, global_size, local_size,
         event = self.kern_estimate_leveldb(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.previouslevel_cl, self.expdecays_cl, np.int64(chunkcount))  #TODO change chnkcount by pos directly
-        event.wait()
-        if self.debug_mode:
-            pyopencl.enqueue_copy(self.queue,  self.out_levels, self.out_levels_cl)
-            #~ self.outputs['levels'].send(self.out_levels.T, index=pos)
-            returns['levels'] = (pos, self.out_levels.T)
-        
+        #~ event.wait()
         
         # hpaf
         nb_section = self.coefficients_hpaf.shape[2]
         global_size = (self.total_channel, nb_section,)
         local_size = (1, nb_section, )
-        #~ event = self.opencl_prg.dynamic_sos_filter(self.queue, global_size, local_size,
         event = self.kern_dynamic_sos_filter(self.queue, global_size, local_size,
                                 self.out_pgc1_cl, self.out_levels_cl, self.outs_hpaf_cl[ring_pos], self.coefficients_hpaf_cl,
                                 self.zi_hpaf_cl, np.int32(nb_section))
-        event.wait()
-        
-        
-        if self.debug_mode:
-            pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.outs_hpaf_cl[ring_pos])
-            #~ self.outputs['hpaf'].send(self.out_hpaf.T, index=pos)
-            returns['hpaf'] = (pos, self.out_hpaf.T)
+        #~ event.wait()
         
         pos2 = pos - self.backward_chunksize + self.chunksize
         #~ print('ici', 'pos', pos,  'pos2', pos2)
@@ -257,35 +236,23 @@ class InvCGC(BaseMultiBand):
         
         
         if pos2<=0:
-            if self.debug_mode:
-                returns['pgc2'] = (None, None)
-                returns['passive'] = (None, None)
-            
             returns['main_output'] = (None, None)
-            return returns
         
         else:
         
             # pgc2
-            #~ pyopencl.enqueue_copy(self.queue,  self.zi_pgc2_cl, self.zi_pgc2) # this make this by copy
-            #~ event = self.opencl_prg.reset_zis(self.queue, (self.total_channel, ), (1, ), self.zi_pgc2_cl)
             event = self.kern_reset_zis(self.queue, (self.total_channel, ), (1, ), self.zi_pgc2_cl)
-            event.wait()
+            #~ event.wait()
 
             nb_section = self.coefficients_pgc.shape[1]
             global_size = (self.total_channel, nb_section,)
             local_size = (1, nb_section, )
             for i in range(self.backward_ratio):
                 rp = (chunkcount - i-1) % self.backward_ratio
-                #~ event = self.opencl_prg.backward_filter(self.queue, global_size, local_size,
                 event = self.kern_backward_filter(self.queue, global_size, local_size,
                                         self.outs_hpaf_cl[rp], self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
-                event.wait()
-            
-            
-            if self.debug_mode:
-                #~ pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
-                returns['pgc2'] = (pos2, self.out_pgc2.T)
+                #~ event.wait()
+            event.wait()
             
             # passive gain by band
             # on very basic benchmark numpy is faster than opencl!!!
@@ -297,30 +264,42 @@ class InvCGC(BaseMultiBand):
             #~ local_size = (1, mwgs, )
             #~ event = self.opencl_prg.bychannel_gain(self.queue, global_size, local_size,
                                         #~ self.out_pgc2_cl, self.out_passive_cl, self.passive_gain_cl)
-            
             #~ event.wait()
             #~ pyopencl.enqueue_copy(self.queue,  self.out_passive, self.out_passive_cl)
-            
-            if self.debug_mode:
-                returns['passive'] = (pos2, self.out_passive.T)
-            
             
             out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
             
             # sum by channel block
             
             for chan in range(self.nb_channel):
-                #~ out_buffer[chan, :] = np.sum(self.out_pgc2[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
                 out_buffer[chan, :] = np.sum(self.out_passive[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
             
             #compensate band_overlap_gain
             out_buffer *= self.band_overlap_gain
             
-
-            
-            
+            returns['main_output'] = (pos2, out_buffer.T)
         
+        
+        if self.debug_mode:
+            ev = pyopencl.enqueue_copy(self.queue,  self.out_pgc1, self.out_pgc1_cl)
+            returns['pgc1'] = (pos, self.out_pgc1.T)
 
-        returns['main_output'] = (pos2, out_buffer.T)
+            pyopencl.enqueue_copy(self.queue,  self.out_levels, self.out_levels_cl)
+            returns['levels'] = (pos, self.out_levels.T)
+
+            pyopencl.enqueue_copy(self.queue,  self.out_hpaf, self.outs_hpaf_cl[ring_pos])
+            returns['hpaf'] = (pos, self.out_hpaf.T)
+
+            if pos2<=0:
+                returns['pgc2'] = (None, None)
+                returns['passive'] = (None, None)
+            
+            else:
+                pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
+                returns['pgc2'] = (pos2, self.out_pgc2.T)
+
+                returns['passive'] = (pos2, self.out_passive.T)
+
+        
         return returns
 

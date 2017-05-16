@@ -8,8 +8,8 @@ import hearinglosssimulator as hls
 nb_channel = 2
 #~ nb_channel = 1
 
-#~ sample_rate = 44100.
-sample_rate = 30000.
+sample_rate = 44100.
+#~ sample_rate = 30000.
 #~ sample_rate = 20000.
 #~ sample_rate = 15000.
 
