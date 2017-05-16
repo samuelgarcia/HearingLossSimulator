@@ -10,8 +10,8 @@ import helper
 
 #~ exit()
 
-#~ nb_channel = 2
-nb_channel = 1
+nb_channel = 2
+#~ nb_channel = 1
 
 sample_rate =44100.
 

@@ -223,3 +223,21 @@ __kernel void bychannel_gain(__global float *inbuffer, __global float *output, _
     output[offset] = inbuffer[offset]*gains[chan];
     
 }
+
+
+__kernel void sum_channel_and_gain(__global float *input,  __global float *output, 
+                                                int nb_repeat, int nb_channel, float band_overlap_gain){
+    int s = get_global_id(0);//sample pos
+    int chan;
+    
+    for (int c=0; c<nb_channel;c++){
+        float sum= 0;
+        for (int r=0; r<nb_repeat; r++){
+            chan = nb_repeat*c + r;
+            sum += input[chan*chunksize+s];
+        }
+        //written in order (sample, channel)
+        output[s*nb_channel+c] = sum * band_overlap_gain;
+    }
+}
+
