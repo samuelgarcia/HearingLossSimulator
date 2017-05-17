@@ -1,5 +1,6 @@
 import os
 import time
+import concurrent.futures
 
 import numpy as np
 #import scipy.signal
@@ -114,15 +115,7 @@ class InvCGC(BaseMultiBand):
         
         self.out_passive = np.zeros((self.total_channel, self.chunksize), dtype= self.dtype)
         
-        #set initial state to minimize initiale state
-        #~ for chan in range(self.total_channel):
-            #~ for section in range(self.coefficients_pgc.shape[1]):
-                #~ coeff = self.coefficients_pgc[chan, section, :]
-                #~ b, a = coeff[:3], coeff[3:]
-                #~ zi = scipy.signal.lfilter_zi(b, a)
-                #~ self.zi_pgc2[chan, section, :] = zi[::-1]
-        
-        
+        self.out_channel = np.zeros((self.chunksize, self.nb_channel), dtype= self.dtype)
         
         #GPU buffers
         self.in_channel_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.in_channel)
@@ -148,6 +141,7 @@ class InvCGC(BaseMultiBand):
         self.passive_gain_cl = pyopencl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.passive_gain.flatten().copy())
         self.out_passive_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_passive)
         
+        self.out_channel_cl = pyopencl.Buffer(self.ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=self.out_channel)
         
         # compialtion
         # dans opencl define levelavgsize %(levelavgsize)d
@@ -168,7 +162,9 @@ class InvCGC(BaseMultiBand):
         self.kern_estimate_leveldb = getattr(self.opencl_prg, 'estimate_leveldb')
         self.kern_dynamic_sos_filter = getattr(self.opencl_prg, 'dynamic_sos_filter')
         self.kern_reset_zis = getattr(self.opencl_prg, 'reset_zis')
-        self.kern_backward_filter = getattr(self.opencl_prg, 'backward_filter')        
+        self.kern_backward_filter = getattr(self.opencl_prg, 'backward_filter')
+        self.kern_bychannel_gain = getattr(self.opencl_prg, 'bychannel_gain')
+        self.kern_sum_channel_and_gain = getattr(self.opencl_prg, 'sum_channel_and_gain')
         
 
 
@@ -179,6 +175,7 @@ class InvCGC(BaseMultiBand):
         returns = {}
         
         if self.bypass:
+            assert not asynch
             # TODO make same latency as proccessing
             assert not self.debug_mode, 'debug mode do not support bypass'
             
@@ -236,8 +233,13 @@ class InvCGC(BaseMultiBand):
         
         
         if pos2<=0:
-            returns['main_output'] = (None, None)
-        
+            if not asynch:
+                event.wait()
+                returns['main_output'] = (None, None)
+                return returns
+            else:
+                return FuturBuffer(None, None, None, None, event) 
+            
         else:
         
             # pgc2
@@ -251,33 +253,50 @@ class InvCGC(BaseMultiBand):
                 rp = (chunkcount - i-1) % self.backward_ratio
                 event = self.kern_backward_filter(self.queue, global_size, local_size,
                                         self.outs_hpaf_cl[rp], self.out_pgc2_cl, self.coefficients_pgc_cl, self.zi_pgc2_cl, np.int32(nb_section))
-                #~ event.wait()
-            event.wait()
+            
             
             # passive gain by band
-            # on very basic benchmark numpy is faster than opencl!!!
-            pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
-            self.out_passive = self.out_pgc2 * self.passive_gain # NUMPY VERSION
             
-            #~ mwgs = self.ctx.devices[0].get_info(pyopencl.device_info.MAX_WORK_GROUP_SIZE)
-            #~ global_size = (self.total_channel, self.chunksize, )
-            #~ local_size = (1, mwgs, )
-            #~ event = self.opencl_prg.bychannel_gain(self.queue, global_size, local_size,
-                                        #~ self.out_pgc2_cl, self.out_passive_cl, self.passive_gain_cl)
+            #NUMPY VERSION (is fasert but do not allow asynch=True)
             #~ event.wait()
-            #~ pyopencl.enqueue_copy(self.queue,  self.out_passive, self.out_passive_cl)
+            #~ pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
+            #~ self.out_passive = self.out_pgc2 * self.passive_gain # NUMPY VERSION
+
+            #~ out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
             
-            out_buffer = np.empty((self.nb_channel, self.chunksize), dtype=self.dtype)
-            
-            # sum by channel block
-            
-            for chan in range(self.nb_channel):
-                out_buffer[chan, :] = np.sum(self.out_passive[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
+            #~ # sum by channel block
+            #~ for chan in range(self.nb_channel):
+                #~ out_buffer[chan, :] = np.sum(self.out_passive[chan*self.nb_freq_band:(chan+1)*self.nb_freq_band, :], axis = 0)
             
             #compensate band_overlap_gain
-            out_buffer *= self.band_overlap_gain
+            #~ out_buffer *= self.band_overlap_gain
+            #~ out_buffer = out_buffer.T
             
-            returns['main_output'] = (pos2, out_buffer.T)
+            
+            #OPENCL VERSION
+            mwgs = self.ctx.devices[0].get_info(pyopencl.device_info.MAX_WORK_GROUP_SIZE)
+            global_size = (self.total_channel, self.chunksize, )
+            local_size = (1, min(mwgs, self.chunksize), )
+            event = self.kern_bychannel_gain(self.queue, global_size, local_size,
+                                        self.out_pgc2_cl, self.out_passive_cl, self.passive_gain_cl)
+            
+            global_size = (self.chunksize,)
+            local_size = None
+            event = self.kern_sum_channel_and_gain(self.queue, global_size, local_size,
+                                    self.out_passive_cl, self.out_channel_cl, 
+                                    np.int32(self.nb_freq_band), np.int32(self.nb_channel),
+                                    np.float32(self.band_overlap_gain))
+            
+            out_buffer = np.empty((self.chunksize, self.nb_channel), dtype=self.dtype)
+            
+            if not asynch:
+                event.wait()
+                pyopencl.enqueue_copy(self.queue,  out_buffer, self.out_channel_cl)
+                returns['main_output'] = (pos2, out_buffer)
+                
+            else:
+                assert not self.debug_mode
+                return FuturBuffer(pos2, self.queue, out_buffer, self.out_channel_cl, event)
         
         
         if self.debug_mode:
@@ -298,8 +317,33 @@ class InvCGC(BaseMultiBand):
                 pyopencl.enqueue_copy(self.queue,  self.out_pgc2, self.out_pgc2_cl)
                 returns['pgc2'] = (pos2, self.out_pgc2.T)
 
+                pyopencl.enqueue_copy(self.queue,  self.out_passive, self.out_passive_cl)
                 returns['passive'] = (pos2, self.out_passive.T)
 
         
         return returns
 
+
+class FuturBuffer(concurrent.futures.Future):
+    def __init__(self, pos2, queue, out_buffer,  out_channel_cl, cl_event):
+        concurrent.futures.Future.__init__(self)
+        self.pos2 = pos2
+        self.queue = queue
+        self.out_buffer = out_buffer
+        self.out_channel_cl = out_channel_cl
+        self.cl_event = cl_event
+    
+    def cancel(self):
+        return False
+
+    def result(self, timeout=None):
+        self.cl_event.wait()
+        returns = {}
+        
+        if self.pos2 is None:
+            returns['main_output'] = (None, None)
+        else:
+            pyopencl.enqueue_copy(self.queue,  self.out_buffer, self.out_channel_cl)
+            returns['main_output'] = (self.pos2, self.out_buffer)
+            
+        return returns

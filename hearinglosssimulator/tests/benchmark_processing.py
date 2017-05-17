@@ -13,9 +13,9 @@ sample_rate = 44100.
 #~ sample_rate = 20000.
 #~ sample_rate = 15000.
 
-chunksize = 256
+#~ chunksize = 256
 #~ chunksize = 512
-#~ chunksize = 1024
+chunksize = 1024
 #~ chunksize = 2048
 #~ backward_chunksize = chunksize*5
 #~ backward_chunksize = chunksize*4
@@ -51,9 +51,9 @@ processing_conf = dict(nb_freq_band=32, level_step=1, loss_params=loss_params,
                 #~ sample_rate, node_conf=node_conf, buffersize_margin=backward_chunksize)
 
 
-#~ for _class in [hls.InvCGC, hls.InvComp]:
+for _class in [hls.InvCGC, hls.InvComp]:
 #~ for _class in [hls.InvComp, hls.InvComp2,]:
-for _class in [hls.InvComp,]:
+#~ for _class in [hls.InvComp,]:
 #~ for _class in [hls.InvComp2,]:
     print()
     print(_class.__name__, sample_rate, chunksize, backward_chunksize, nb_channel, processing_conf['nb_freq_band'])
