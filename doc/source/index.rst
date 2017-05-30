@@ -47,102 +47,112 @@ The OHC loss is simulated by a deficit in compression and IHC loss with a passiv
 
 
 
-Requirements
-------------
-
-**Python 3 scientific stack**:
-    Of course you need python and the classical scientific stack.
-    You need at least python 3.5.
-        
-    On linux, you can get it is often already installed.
-    On debian/unbuntu/mint::
-        
-        sudo apt-get install python3 python3-pip  python3-numpy python3-scipy python3-pyopencl python3-cffi
-        sudo pip3 install sounddevice
-        
-    On other platform, the easiest convinient way is to install anaconda_ python distribution.
-    Choose python 3.5 (or more), and then::
-        
-        conda install numpy scipy pyopencl sounddevice
-
-**OpenCL**:
-    OpenCL, the GPU language progamming. The central part of the simulator is done
-    with OpenCL. While OpenCL is an open implementation, OpenCL drivers by themself
-    are not opensource. You need to install OpenCL driver of your GPU device (and sometime
-    the opencl sdk) manually.
-    GPU manufacturer provide these drivers:
-        * Nvidia : https://developer.nvidia.com/opencl
-        * AMD: http://support.amd.com/en-us/kb-articles/Pages/OpenCL2-Driver.aspx
-        * Intel : https://software.intel.com/en-us/intel-opencl
-    
-    For some GPU manufacturers you will need to give some personal
-    information about you before downloading drivers. Be aware that
-    this can provoke very bad feeling.
-    
-    For some ubuntu distribution if you have nvidia search for package like::
-    
-        sudo apt-get install nvidia-opencl-icd-XXX
-    
-    
-    For testing if you have opencl working lanch python3 and test this
-    if the prompt propose or give a context related to your harware
-    you are lucky!!::
-    
-        import pyopencl
-        pyopencl.create_some_context()
-        
-
-
-**For the GUI**:
-    For using the GUI you also need:
-        * PyQt5
-        * pyqtgraph
-        * matplotlib.
-        
-    In terminal::
-        
-        sudo apt-get install python3-pyqt5 python3-matplotlib
-        sudo pip3 install pyqtgraph
-        
-    Or::
-        
-        conda install python3-pyqt5 python3-matplotlib pyqtgraph
-
-**For read/write wavefile**:
-    For playing with wav file you need soundfile_::
-    
-        pip3 install soundfile
-    
-    Or::
-    
-        conda install soundfile
-    
-
-.. _anaconda: https://www.continuum.io/downloads/
-.. _soundfile: http://pysoundfile.readthedocs.io/
-
-
 Installation
 ------------
 
-When all requirements are installed you are almost done!!
-
-hearinglosssimulator project is still in progress so you must install github version,
-there is no python packge yet::
-    
-    sudo apt-get install git
-    git clone https://github.com/samuelgarcia/HearingLossSimulator.git
-    cd HearingLossSimulator
-    python3 setup.py install --user
+There are 2 steps:
+  1. install python and related stuff 2 cases here:
+    * with anaconda (prefered on windows and OSX)
+    * pip and virtualenvwrapepr (prefered on linux)
+  2. install opencl drivers themself many case:
+    * windows with Intel GPU
+    * windows with Nvidia GPU
+    * linux with Intel GPU
+    * linux with Nvidia GPU
 
 .. warning::
-    On actual ubuntu/debian python is python2 so you need python3.
-    On other distro check if python is python3 or python2 and adapt this procedure.
+    OpenCL is a GPU language progamming. The central part of the simulator is done
+    with OpenCL. While OpenCL is an open implementation, OpenCL drivers by themself
+    are not opensource. You need to install OpenCL driver of your GPU device (and sometime
+    the opencl sdk) manually.
 
     
-Test it in python3::
 
-    import hearinglosssimulator
+Step 1 - Case 1 : with anaconda (prefered on window or OSX)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Do:
+
+  1. Download anaconda here https://www.continuum.io/downloads. Take **python 3.6**
+  2. Install it in user mode (no admin password)
+  3. Lanch **anaconda navigator**
+  4. Go on the tab **environements**, click on **root** context menu.
+  5. **Open Terminal** and do this::
+    
+       conda install scipy numpy cffi matplotlib
+       conda install pyqt=5 jupyter
+       pip install pyqtgraph==0.10 soundfile sounddevice
+
+  6. Download PyOpenCl here for windows : http://www.lfd.uci.edu/~gohlke/pythonlibs/
+  7. And do ::
+  
+       cd C:/users/...../Downloads
+       pip install pyopencl‑2016.2.1+cl21‑cp36‑cp36m‑win_amd64.whl
+
+  8. Finally::
+  
+       pip install https://github.com/samuelgarcia/hearingLossSimulator/archive/master.zip
+
+       
+Step 1 - Case 2 : with pip (prefered on linux)
+++++++++++++++++++++++++++++++++++++++++++++++
+
+In a terminal in ubuntu 16.04 do::
+
+  sudo apt-get install virtualenvwrapper
+  mkvirtualenv hls   --python=/usr/bin/python3.5
+  workon hls 
+  pip install scipy numpy matplotlib cffi jupyter PyQt5 pyqtgraph==0.10 sounddevice soundfile
+  sudo apt-get install ocl-icd-libopencl1 ocl-icd-opencl-dev
+  pip install pyopencl
+  pip install https://github.com/samuelgarcia/hearingLossSimulator/archive/master.zip
+  
+
+Step 2 - Windows with Intel
++++++++++++++++++++++++++++
+
+Go here https://software.intel.com/en-us/articles/opencl-drivers
+and download the sdk developpement kit for windows.
+
+
+Step 2 - Windows with Nvidia
++++++++++++++++++++++++++++
+
+
+Go here https://developer.nvidia.com/opencl and download opencl drivers.
+
+
+Step 2 - Linux with Intel
++++++++++++++++++++++++++++
+
+2 possibilities:
+
+  * The open source (sometimes bad perf)::
+  
+    sudo apt-get install beignet
+  
+  * The official intel:
+  
+    * go herehttps://software.intel.com/en-us/articles/opencl-drivers
+    * download the sdk developpement kit for linux.
+
+
+Step 2 - Linux with NVidia
++++++++++++++++++++++++++++
+
+sudo apt-get install nvidia-opencl-icd-340
+
+
+
+
+Launch
+------
+
+
+Open a terminal and do::
+
+  hls
+
 
 
 
@@ -315,9 +325,8 @@ GUI
 
 To start the main GUI::
 
-    python start_online_hearingloss.py
+    hls
 
-On some windows installation, you can also double click on the *start_online_hearingloss.py*.
 
 You should see this:
 
