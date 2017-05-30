@@ -36,6 +36,12 @@ setup(
     author_email = "samuel.garcia@cnrs.fr",
     description = "Near real time hearing loss simulator in python based on Compressive Gammachirp.",
     long_description = open('README.rst').read(),
+    entry_points={
+          'console_scripts': ['hls=hearinglosssimulator.scripts:hls',
+                                            'hlswifi=hearinglosssimulator.scripts:open_hls_wifi',
+                                            ],
+        },
+
     license = "MIT",
     url='http://hearinglosssimulator.readthedocs.io/',
     classifiers = [
