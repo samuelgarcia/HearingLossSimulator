@@ -7,6 +7,7 @@ on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if on_rtd:
     install_requires = []
     extras_require = {}
+    data_files = data_files
 else:
     install_requires = ['numpy',
                         'scipy',
@@ -18,7 +19,9 @@ else:
                                 'soundfile': ['soundfile'], 
                                 'pyacq' : 'pyacq',
                             }
-                        
+    
+    data_files = [('kernels', ['hearinglosssimulator/cl_processing.cl'])]
+    
 #import hearinglosssimulator
 #version = hearinglosssimulator.__version__
 
@@ -32,6 +35,7 @@ setup(
     packages = ['hearinglosssimulator', ],
     install_requires=install_requires,
     extras_require = extras_require,
+    data_files = data_files,
     author = "Samuel Garcia",
     author_email = "samuel.garcia@cnrs.fr",
     description = "Near real time hearing loss simulator in python based on Compressive Gammachirp.",

@@ -11,12 +11,6 @@ import argparse
 
 
 
-if __name__ == '__main__':
-    app = pg.mkQApp()
-    win = MainWindow()
-    win.show()
-    app.exec_()    
-
 comand_list =[
     'audiodevice',
     'wifidevice',
@@ -65,6 +59,11 @@ def hls():
     
     elif command=='wifidevice':
         open_hls_wifi()
+
+
+
+if __name__=='__main__':
+    open_mainwindow()
 
 
 
