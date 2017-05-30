@@ -19,7 +19,7 @@ else:
                                 'soundfile': ['soundfile'], 
                                 'pyacq' : 'pyacq',
                             }
-    package_data={'kernels': ['hearinglosssimulator/cl_processing.cl']},
+    package_data={'hearinglosssimulator': ['cl_processing.cl']}
 
     
 #import hearinglosssimulator
@@ -32,7 +32,7 @@ version = open("./hearinglosssimulator/version.py").readline().split('=')[1].rep
 setup(
     name = "hearinglosssimulator",
     version = version,
-    packages = ['hearinglosssimulator', ],
+    packages = ['hearinglosssimulator', 'hearinglosssimulator.gui', ],
     install_requires=install_requires,
     extras_require = extras_require,
     package_data = package_data,
