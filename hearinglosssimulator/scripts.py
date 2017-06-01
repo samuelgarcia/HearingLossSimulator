@@ -22,7 +22,7 @@ txt_command_list = ', '.join(comand_list)
 def open_mainwindow():
     import PyQt5
     import pyqtgraph as pg
-    from hearinglosssimulator.gui.mainwindow import MainWindow
+    from hearinglosssimulator.gui.audiodevice_mainwindow import AudioDeviceMainWindow
     
     app = pg.mkQApp()
     win = MainWindow()

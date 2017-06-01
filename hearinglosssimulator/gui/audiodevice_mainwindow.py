@@ -28,7 +28,7 @@ class Mutex(QtCore.QMutex):
         return self    
 
 
-class MainWindow(QtGui.QMainWindow):
+class AudioDeviceMainWindow(QtGui.QMainWindow):
     def __init__(self, parent = None):
         QtGui.QMainWindow.__init__(self, parent)
         
@@ -320,7 +320,7 @@ class MainWindow(QtGui.QMainWindow):
 
 if __name__ == '__main__':
     app = pg.mkQApp()
-    win = MainWindow()
+    win = AudioDeviceMainWindow()
     win.show()
     app.exec_()
 

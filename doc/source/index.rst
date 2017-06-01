@@ -102,8 +102,10 @@ In a terminal in ubuntu 16.04 do::
   sudo apt-get install virtualenvwrapper
   mkvirtualenv hls   --python=/usr/bin/python3.5
   workon hls 
+  sudo portaudio19-dev
   pip install scipy numpy matplotlib cffi jupyter PyQt5 pyqtgraph==0.10 sounddevice soundfile
-  sudo apt-get install ocl-icd-libopencl1 ocl-icd-opencl-dev
+  
+  sudo apt-get install ocl-icd-libopencl1 ocl-icd-opencl-dev opencl-headers
   pip install pyopencl
   pip install https://github.com/samuelgarcia/hearingLossSimulator/archive/master.zip
   
