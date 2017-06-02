@@ -1,21 +1,21 @@
-import PyQt5 # this force pyqtgraph to deal with Qt5
+from .myqt import QT
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+
 import numpy as np
 import pyopencl
 
-class GpuDeviceSelection(QtGui.QWidget):
+class GpuDeviceSelection(QT.QWidget):
     def __init__(self, parent = None):
-        QtGui.QWidget.__init__(self, parent)
-        mainlayout  =QtGui.QVBoxLayout()
+        QT.QWidget.__init__(self, parent)
+        mainlayout  =QT.QVBoxLayout()
         self.setLayout(mainlayout)
 
-        mainlayout.addWidget(QtGui.QLabel(u'OpenCL Platform'))
-        self.combo_platform = QtGui.QComboBox()
+        mainlayout.addWidget(QT.QLabel(u'OpenCL Platform'))
+        self.combo_platform = QT.QComboBox()
         mainlayout.addWidget(self.combo_platform)
         
-        mainlayout.addWidget(QtGui.QLabel(u'OpenCL Device'))
-        self.combo_dev = QtGui.QComboBox()
+        mainlayout.addWidget(QT.QLabel(u'OpenCL Device'))
+        self.combo_dev = QT.QComboBox()
         mainlayout.addWidget(self.combo_dev)
         
         mainlayout.addStretch()

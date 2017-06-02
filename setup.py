@@ -42,7 +42,7 @@ setup(
     long_description = open('README.rst').read(),
     entry_points={
           'console_scripts': ['hls=hearinglosssimulator.scripts:hls',
-                                            'hlswifi=hearinglosssimulator.scripts:open_hls_wifi',
+                                            'hlswifi=hearinglosssimulator.scripts:open_wifidevice_mainwindow',
                                             ],
         },
 

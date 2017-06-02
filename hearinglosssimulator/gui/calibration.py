@@ -1,49 +1,49 @@
-import PyQt5 # this force pyqtgraph to deal with Qt5
+from .myqt import QT
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+
 import numpy as np
 
 from hearinglosssimulator.gui.guitools import FreqGainDuration, play_sinus, play_input_to_output
 
 
-class Calibration(QtGui.QWidget):
+class Calibration(QT.QWidget):
     def __init__(self, input_device_index=None, device=None, parent = None):
-        QtGui.QWidget.__init__(self, parent)
+        QT.QWidget.__init__(self, parent)
 
         self.device = device
         
         
-        mainlayout  =QtGui.QVBoxLayout()
+        mainlayout  =QT.QVBoxLayout()
         self.setLayout(mainlayout)
         
-        mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Output level calibration</b>'))
+        mainlayout.addWidget(QT.QLabel(u'<h1><b>Output level calibration</b>'))
         self.freqgainduration = FreqGainDuration()
         mainlayout.addWidget(self.freqgainduration)
         self.freqgainduration.spinbox_gain.valueChanged.connect(self.refresh_label_calibration)
         
-        but = QtGui.QPushButton('Test play sinus')
+        but = QT.QPushButton('Test play sinus')
         but.clicked.connect(self.play_sinus)
         mainlayout.addWidget(but)
 
         
-        mainlayout.addWidget(QtGui.QLabel(u'Play sinus and report dBSpl measurement:'))
-        self.spinbox_spllevel = QtGui.QDoubleSpinBox(maximum = 140., minimum = 0., value = 93.979400086720375, decimals = 3)
+        mainlayout.addWidget(QT.QLabel(u'Play sinus and report dBSpl measurement:'))
+        self.spinbox_spllevel = QT.QDoubleSpinBox(maximum = 140., minimum = 0., value = 93.979400086720375, decimals = 3)
         mainlayout.addWidget(self.spinbox_spllevel)
         self.spinbox_spllevel.valueChanged.connect(self.refresh_label_calibration)
         
-        self.label_calibration = QtGui.QLabel(u'')
+        self.label_calibration = QT.QLabel(u'')
         mainlayout.addWidget(self.label_calibration)
         
 
 
-        but = QtGui.QPushButton('Input to output')
+        but = QT.QPushButton('Input to output')
         but.clicked.connect(self.play_input_to_output)
         mainlayout.addWidget(but)
         
         
         
         mainlayout.addWidget(but)
-        self.label_db_input = QtGui.QLabel(u'')
+        self.label_db_input = QT.QLabel(u'')
         mainlayout.addWidget(self.label_db_input)
         
         mainlayout.addStretch()

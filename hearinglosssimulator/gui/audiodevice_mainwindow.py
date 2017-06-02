@@ -1,74 +1,47 @@
-import PyQt5 # this force pyqtgraph to deal with Qt5
-import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
-import os, sys
-import json
-import time
-
-from collections import OrderedDict
-
-import sounddevice as sd
-
-#~ import pyacq
-
-import hearinglosssimulator as hls
-from hearinglosssimulator.gui.lossparameters import HearingLossParameter
-from hearinglosssimulator.gui.calibration import Calibration
-from hearinglosssimulator.gui.audioselection import AudioDeviceSelection
-from hearinglosssimulator.gui.gpuselection import GpuDeviceSelection
+from .common_mainwindow import *
 
 
-
-class Mutex(QtCore.QMutex):
-    def __exit__(self, *args):
-        self.unlock()
-
-    def __enter__(self):
-        self.lock()
-        return self    
-
-
-class AudioDeviceMainWindow(QtGui.QMainWindow):
+class AudioDeviceMainWindow(QT.QMainWindow):
     def __init__(self, parent = None):
-        QtGui.QMainWindow.__init__(self, parent)
+        QT.QMainWindow.__init__(self, parent)
         
         self.setWindowTitle(u'Hearing loss simulator')
-        #~ self.setWindowIcon(QtGui.QIcon(':/TODO.png'))
+        #~ self.setWindowIcon(QT.QIcon(':/TODO.png'))
         self.resize(1000,800)
         
         self.createActions()
         self.createToolBars()
         
         # central layout
-        w = QtGui.QWidget()
+        w = QT.QWidget()
         self.setCentralWidget(w)
-        mainlayout  = QtGui.QVBoxLayout()
+        mainlayout  = QT.QVBoxLayout()
         w.setLayout(mainlayout)
         
         
-        mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Start/Stop</b>'))
-        h = QtGui.QHBoxLayout()
+        mainlayout.addWidget(QT.QLabel(u'<h1><b>Start/Stop</b>'))
+        h = QT.QHBoxLayout()
         mainlayout.addLayout(h)
         
-        self.but_compute_filters = QtGui.QPushButton(u'Computed filters')
+        self.but_compute_filters = QT.QPushButton(u'Computed filters')
         self.but_compute_filters.clicked.connect(self.compute_filters)
         h.addWidget(self.but_compute_filters)
         
-        self.but_start_stop = QtGui.QPushButton(u'Start/Stop playback', checkable = True, enabled= False)
+        self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable = True, enabled= False)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
-        self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
+        self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
         h.addWidget(self.but_start_stop)
 
-        self.but_enable_bypass = QtGui.QPushButton(u'Enable/bypass simulator', checkable = True, enabled=False)
+        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable = True, enabled=False)
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
         h.addWidget(self.but_enable_bypass)
 
         
-        mainlayout.addWidget(QtGui.QLabel(u'<h1><b>Setup loss on each ear</b>'))
+        mainlayout.addWidget(QT.QLabel(u'<h1><b>Setup loss on each ear</b>'))
         self.hearingLossParameter = HearingLossParameter()
         mainlayout.addWidget(self.hearingLossParameter)
 
-        self.timer_icon = QtCore.QTimer(interval=1000)
+        self.timer_icon = QT.QTimer(interval=1000)
         self.timer_icon.timeout.connect(self.flash_icon)
         self.flag_icon = True
         self.timer_icon.start()
@@ -103,21 +76,21 @@ class AudioDeviceMainWindow(QtGui.QMainWindow):
                                 ('Calibration', {'widget' :self.calibrationWidget}) ])
         
         for name, attr in self.dialogs.items():
-            act = self.actions[name] = QtGui.QAction(name, self, checkable = False) #, icon =QtGui.QIcon(':/TODO.png'))
+            act = self.actions[name] = QT.QAction(name, self, checkable = False) #, icon =QT.QIcon(':/TODO.png'))
             act.triggered.connect(self.open_dialog)
             attr['action'] = act
-            attr['widget'].setWindowFlags(QtCore.Qt.Window)
-            attr['widget'].setWindowModality(QtCore.Qt.NonModal)
-            attr['dia'] = dia = QtGui.QDialog()
-            layout  = QtGui.QVBoxLayout()
+            attr['widget'].setWindowFlags(QT.Qt.Window)
+            attr['widget'].setWindowModality(QT.Qt.NonModal)
+            attr['dia'] = dia = QT.QDialog()
+            layout  = QT.QVBoxLayout()
             dia.setLayout(layout)
             layout.addWidget(attr['widget'])
 
     def createToolBars(self):
-        self.toolbar = QtGui.QToolBar()
-        self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+        self.toolbar = QT.QToolBar()
+        self.toolbar.setToolButtonStyle(QT.Qt.ToolButtonTextUnderIcon)
         self.addToolBar(self.toolbar)
-        self.toolbar.setIconSize(QtCore.QSize(60, 40))
+        self.toolbar.setIconSize(QT.QSize(60, 40))
         
         for name, act in self.actions.items():
             self.toolbar.addAction(act)
@@ -128,17 +101,17 @@ class AudioDeviceMainWindow(QtGui.QMainWindow):
         if self.running():
             self.flag_icon = not(self.flag_icon)
             if self.flag_icon:
-                self.but_start_stop.setIcon(QtGui.QIcon.fromTheme(''))
+                self.but_start_stop.setIcon(QT.QIcon.fromTheme(''))
             else:
-                self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+                self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-start'))
         else:
-            self.but_start_stop.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
+            self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
 
 
     def warn(self, title, text):
-        mb = QtGui.QMessageBox.warning(self, title,text, 
-                QtGui.QMessageBox.Ok ,  QtGui.QMessageBox.Default  | QtGui.QMessageBox.Escape,
-                QtGui.QMessageBox.NoButton)
+        mb = QT.QMessageBox.warning(self, title,text, 
+                QT.QMessageBox.Ok ,  QT.QMessageBox.Default  | QT.QMessageBox.Escape,
+                QT.QMessageBox.NoButton)
 
     def closeEvent (self, event):
         try:
@@ -308,9 +281,9 @@ class AudioDeviceMainWindow(QtGui.QMainWindow):
     def enable_bypass_simulator(self, checked):
         self.processing.set_bypass(checked)
         if checked:
-            self.but_enable_bypass.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+            self.but_enable_bypass.setIcon(QT.QIcon.fromTheme('process-stop'))
         else:
-            self.but_enable_bypass.setIcon(QtGui.QIcon.fromTheme(''))
+            self.but_enable_bypass.setIcon(QT.QIcon.fromTheme(''))
             
 
 

@@ -19,19 +19,25 @@ comand_list =[
 txt_command_list = ', '.join(comand_list)
 
 
-def open_mainwindow():
-    import PyQt5
-    import pyqtgraph as pg
+def open_audiodevice_mainwindow():
+    
     from hearinglosssimulator.gui.audiodevice_mainwindow import AudioDeviceMainWindow
+    import pyqtgraph as pg
     
     app = pg.mkQApp()
-    win = MainWindow()
+    win = AudioDeviceMainWindow()
     win.show()
     app.exec_()
 
 
-def open_hls_wifi():
-    print('TODO GUI wifi')
+def open_wifidevice_mainwindow():
+    from hearinglosssimulator.gui.wifidevice_mainwindow import WifiDeviceMainWindow
+    import pyqtgraph as pg
+    
+    app = pg.mkQApp()
+    win = WifiDeviceMainWindow()
+    win.show()
+    app.exec_()
     
 def hls():
     argv = sys.argv[1:]
@@ -55,7 +61,7 @@ def hls():
         exit()
     
     if command=='audiodevice':
-        open_mainwindow()
+        open_audiodevice_mainwindow()
     
     elif command=='wifidevice':
         open_hls_wifi()
@@ -63,7 +69,8 @@ def hls():
 
 
 if __name__=='__main__':
-    open_mainwindow()
+    #~ open_audiodevice_mainwindow()
+    open_wifidevice_mainwindow()
 
 
 

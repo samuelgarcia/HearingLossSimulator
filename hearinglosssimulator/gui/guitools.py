@@ -1,6 +1,6 @@
-import PyQt5 # this force pyqtgraph to deal with Qt5
+from .myqt import QT
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+
 import numpy as np
 
 import sounddevice as sd
@@ -18,7 +18,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fig, self.ax = pyplot.subplots()
         FigureCanvasQTAgg.__init__(self, self.fig)
         self.setParent(parent)
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.setSizePolicy(QT.QSizePolicy.Expanding, QT.QSizePolicy.Expanding)
         self.updateGeometry()
         self.fig.set_facecolor('#FFFFFF')
         
@@ -29,24 +29,24 @@ def test_Canvas():
     app.exec_()    
 
 
-class FreqGainDuration(QtGui.QWidget):
+class FreqGainDuration(QT.QWidget):
     def __init__(self, parent = None):
-        QtGui.QWidget.__init__(self, parent)
-        mainlayout  =QtGui.QHBoxLayout()
+        QT.QWidget.__init__(self, parent)
+        mainlayout  =QT.QHBoxLayout()
         self.setLayout(mainlayout)
 
-        mainlayout.addWidget(QtGui.QLabel(u'Gain (dBFs)'))
-        self.spinbox_gain = QtGui.QSpinBox(maximum = 0, minimum = -100)
+        mainlayout.addWidget(QT.QLabel(u'Gain (dBFs)'))
+        self.spinbox_gain = QT.QSpinBox(maximum = 0, minimum = -100)
         mainlayout.addWidget(self.spinbox_gain)
         mainlayout.addStretch()
         
-        mainlayout.addWidget(QtGui.QLabel(u'Duration (s)'))
-        self.spinbox_duration = QtGui.QSpinBox(maximum = 15, minimum = .5)
+        mainlayout.addWidget(QT.QLabel(u'Duration (s)'))
+        self.spinbox_duration = QT.QSpinBox(maximum = 15, minimum = .5)
         mainlayout.addWidget(self.spinbox_duration)
         mainlayout.addStretch()
 
-        mainlayout.addWidget(QtGui.QLabel(u'Freq (Hz)'))
-        self.spinbox_freq = QtGui.QSpinBox(maximum = 20000, minimum = 1)
+        mainlayout.addWidget(QT.QLabel(u'Freq (Hz)'))
+        self.spinbox_freq = QT.QSpinBox(maximum = 20000, minimum = 1)
         mainlayout.addWidget(self.spinbox_freq)
         
         self.set()
