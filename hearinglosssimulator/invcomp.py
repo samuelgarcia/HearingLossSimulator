@@ -72,6 +72,7 @@ class InvComp(BaseMultiBand):
         self.coefficients_pgc = [None]*self.nb_channel
         self.gain_controlled = [None]*self.nb_channel
         for c, chan in enumerate(channels):
+            #~ print(c, chan)
             self.coefficients_pgc[c], self.gain_controlled[c], levels, band_overlap_gain = make_invcomp_filter(self.freqs, compresison_degree_all[chan],
                                         self.level_max, self.level_step, self.sample_rate, dtype=self.dtype)
             print(chan, 'band_overlap_gain', band_overlap_gain)

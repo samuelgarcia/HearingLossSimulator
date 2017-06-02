@@ -143,7 +143,22 @@ def test_play_input_to_output():
     print(sd.query_devices())
     play_input_to_output(4, 'default')
     #~ play_input_to_output(4, 10)
-    
+
+
+
+
+def get_dict_from_group_param(param, cascade = False):
+    assert param.type() == 'group'
+    d = {}
+    for p in param.children():
+        if p.type() == 'group':
+            if cascade:
+                d[p.name()] = get_dict_from_group_param(p, cascade = True)
+            continue
+        else:
+            d[p.name()] = p.value()
+    return d
+
 
 
 

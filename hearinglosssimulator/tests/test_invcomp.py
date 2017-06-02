@@ -17,11 +17,11 @@ sample_rate =44100.
 
 #~ chunksize = 256
 #~ chunksize = 512
-#~ chunksize = 1024
-chunksize = 2048
-#~ backward_chunksize = chunksize*2
+chunksize = 1024
+#~ chunksize = 2048
+backward_chunksize = chunksize*2
 #~ backward_chunksize = chunksize*5
-backward_chunksize = chunksize*4
+#~ backward_chunksize = chunksize*4
 
 nloop = 20
 
@@ -38,7 +38,8 @@ def test_invcomp():
     
     loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
     loss_params['right'] = loss_params['left']
-    processing_conf = dict(nb_freq_band=32, level_step=3, level_max = 120., loss_params=loss_params, 
+    processing_conf = dict(nb_freq_band=32, level_step=1., level_max = 100., loss_params=loss_params, 
+                low_freq=100., high_freq=15000.,
                 debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
     processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     

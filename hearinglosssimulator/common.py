@@ -37,10 +37,14 @@ class BaseMultiBand:
         
         self.use_filter_cache = use_filter_cache
 
+        self.ctx = None
+        
         self.configure(**params)
         
         if apply_configuration_at_init:
             self.initialize()
+        
+        
     
     def create_opencl_context(self, gpu_platform_index=None, gpu_device_index=None):
         self.gpu_platform_index = gpu_platform_index
@@ -108,7 +112,7 @@ class BaseMultiBand:
         Hz have a passive loss.
         
         """
-        
+        #~ print('self.configure', nb_freq_band, low_freq, high_freq, level_step, level_max)
         assert high_freq<self.sample_rate/2., 'high_freq is hiher that nyquist (sample_rate/2)'
         
         self.nb_freq_band = nb_freq_band
@@ -175,8 +179,9 @@ class BaseMultiBand:
             self._load_filters()
             print('Load cache for filters', self.__class__.__name__, )
         else:
-            print('Save cache for filters', self.__class__.__name__)
+            print('Compute filters', self.__class__.__name__)
             self.make_filters()
+            print('Save cache for filters', self.__class__.__name__)
             self._save_filters()
         
     
@@ -186,7 +191,9 @@ class BaseMultiBand:
         else:
             self.make_filters()
         
-        self.create_opencl_context()
+        if self.ctx is None:
+            self.create_opencl_context()
+        
         self.initlalize_cl()
         
         
