@@ -37,6 +37,31 @@ class CommonMainWindow(QT.QMainWindow):
         
         self.setWindowTitle(u'Hearing loss simulator')
         #~ self.setWindowIcon(QT.QIcon(':/TODO.png'))
+
+        # central layout
+        w = QT.QWidget()
+        self.setCentralWidget(w)
+        self.mainlayout  = QT.QVBoxLayout()
+        w.setLayout(self.mainlayout)
+        
+        
+        self.mainlayout.addWidget(QT.QLabel(u'<h1><b>Start/Stop</b>'))
+        h = QT.QHBoxLayout()
+        self.mainlayout.addLayout(h)
+        
+        self.but_compute_filters = QT.QPushButton(u'Computed filters')
+        self.but_compute_filters.clicked.connect(self.compute_filters)
+        h.addWidget(self.but_compute_filters)
+        
+        self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable = True, enabled= False)
+        self.but_start_stop.toggled.connect(self.start_stop_audioloop)
+        self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
+        h.addWidget(self.but_start_stop)
+
+        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable = True, enabled=False)
+        self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
+        h.addWidget(self.but_enable_bypass)
+        
         
         self.mutex = Mutex()
 
@@ -88,7 +113,6 @@ class CommonMainWindow(QT.QMainWindow):
         self.change_audio_device()
     
     
-    
     @property
     def gpu_platform_index(self):
         return self.gpuDeviceSelection.get_configuration()['platform_index']
@@ -118,15 +142,41 @@ class CommonMainWindow(QT.QMainWindow):
                     pass
 
 
-
+    def compute_filters(self):
+        print('compute_filters')
+        with self.mutex:
+            try:
+                self.setup_processing()
+                self.setup_audio_stream()
+            except Exception as e:
+                print(e)
+                
+            else:
+                self.but_start_stop.setEnabled(True)
+                self.but_enable_bypass.setEnabled(True)
+                
     
     
-
     def enable_bypass_simulator(self, checked):
-        self.processing.set_bypass(checked)
+        self.set_bypass(checked)
+        
         if checked:
             self.but_enable_bypass.setIcon(QT.QIcon.fromTheme('process-stop'))
         else:
             self.but_enable_bypass.setIcon(QT.QIcon.fromTheme(''))
             
+    
+    def running(self):
+        raise(NotImplemented)
+    
+    def start_stop_audioloop(self, checked):
+        raise(NotImplemented)
+    
+    def setup_processing(self):
+        raise(NotImplemented)
+    
+    def setup_audio_stream(self):
+        raise(NotImplemented)
 
+    def set_bypass(self, bypass):
+        raise(NotImplemented)

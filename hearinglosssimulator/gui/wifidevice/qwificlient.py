@@ -202,6 +202,7 @@ class QWifiClient(QT.QObject):
         self.thread_teststream = ThreadTestStream(self.client_protocol, parent=self)
         self.thread_teststream.connection_broken.connect(self.on_connection_broken)
         
+        
         self.active_thread = None
         
     def change_state(self, new_state):
@@ -263,15 +264,22 @@ class QWifiClient(QT.QObject):
         new_state = stream_type+'-loop'
         
         self.timer_ping.stop()
-        self.change_state(new_state)
-        self.client_protocol.send_start_stream(stream_type=stream_type)
-        self.active_thread = thread
-        self.active_thread.start()
+        
+        try:
+            self.client_protocol.send_start_stream(stream_type=stream_type)
+            self.active_thread = thread
+            self.active_thread.start()
+            self.change_state(new_state)
+        except Exception as e:
+            print('ERREUR self.client_protocol.send_start_stream', e)
+            self.change_state('disconnected')
+            self.try_connection()
     
     def stop_loop(self, stream_type):
         print('stop_loop', stream_type)
         state = stream_type+'-loop'
         assert state == state
+        print('ici', self.active_thread)
 
         self.active_thread.stop()
         self.active_thread.wait()
@@ -290,64 +298,15 @@ class QWifiClient(QT.QObject):
 
     def start_audio_loop(self):
         self.start_loop(self.thread_audiostream, 'audio')
-        
-        #~ print('start_audio_loop')
-        #~ assert self.state == 'connected'
-        
-        #~ self.timer_ping.stop()
-        #~ self.change_state('audio-loop')
-        #~ self.client_protocol.send_start_stream(stream_type='audio')
-        #~ self.thread_audiostream.start()
 
     def stop_audio_loop(self):
         self.stop_loop('audio')
-        
-        #~ print('stop_audio_loop')
-        #~ assert self.state == 'audio-loop'
-
-        #~ self.thread_audiostream.stop()
-        #~ self.thread_audiostream.wait()
-        
-        #~ try:
-            #~ self.client_protocol.send_stop_stream(stream_type='audio')
-            #~ self.change_state('connected')
-            #~ self.start_ping()
-            
-        #~ except Exception as e:
-            #~ print('ERROR STOP_STREAM/AUDIO_STREAM', e)
-            #~ self.change_state('disconnected')
-            #~ self.try_connection()
-
 
     def start_test_loop(self):
         self.start_loop(self.thread_teststream, 'test')
         
-        #~ print('start_test_loop')
-        #~ assert self.state == 'connected'
-        
-        #~ self.timer_ping.stop()
-        #~ self.change_state('test-loop')
-        #~ self.client_protocol.send_start_stream(stream_type='test')
-        #~ self.thread_teststream.start()
-
     def stop_test_loop(self):
         self.start_loop('test')
-        
-        #~ print('stop_test_loop')
-        #~ assert self.state == 'test-loop'
-
-        #~ self.thread_teststream.stop()
-        #~ self.thread_teststream.wait()
-        
-        #~ try:
-            #~ self.client_protocol.send_stop_stream(stream_type='test')
-            #~ self.change_state('connected')
-            #~ self.start_ping()
-            
-        #~ except Exception as e:
-            #~ print('ERROR STOP_STREAM/AUDIO_STREAM', e)
-            #~ self.change_state('disconnected')
-            #~ self.try_connection()
 
     def on_connection_broken(self):
         #thread_audiostream or thread_teststream

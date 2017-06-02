@@ -17,35 +17,11 @@ class AudioDeviceMainWindow(CommonMainWindow):
         
         self.createActions()
         self.createToolBars()
-        
-        # central layout
-        w = QT.QWidget()
-        self.setCentralWidget(w)
-        mainlayout  = QT.QVBoxLayout()
-        w.setLayout(mainlayout)
-        
-        
-        mainlayout.addWidget(QT.QLabel(u'<h1><b>Start/Stop</b>'))
-        h = QT.QHBoxLayout()
-        mainlayout.addLayout(h)
-        
-        self.but_compute_filters = QT.QPushButton(u'Computed filters')
-        self.but_compute_filters.clicked.connect(self.compute_filters)
-        h.addWidget(self.but_compute_filters)
-        
-        self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable = True, enabled= False)
-        self.but_start_stop.toggled.connect(self.start_stop_audioloop)
-        self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
-        h.addWidget(self.but_start_stop)
-
-        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable = True, enabled=False)
-        self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
-        h.addWidget(self.but_enable_bypass)
 
         
-        mainlayout.addWidget(QT.QLabel(u'<h1><b>Setup loss on each ear</b>'))
+        self.mainlayout.addWidget(QT.QLabel(u'<h1><b>Setup loss on each ear</b>'))
         self.hearingLossParameter = HearingLossParameter()
-        mainlayout.addWidget(self.hearingLossParameter)
+        self.mainlayout.addWidget(self.hearingLossParameter)
 
         self.timer_icon = QT.QTimer(interval=1000)
         self.timer_icon.timeout.connect(self.flash_icon)
@@ -113,7 +89,13 @@ class AudioDeviceMainWindow(CommonMainWindow):
         #~ print('setup_processing')
         # take from UI
         calibration = self.calibrationWidget.get_configuration()['spl_calibration_at_zero_dbfs']
-        loss_params = self.hearingLossParameter.get_configuration()
+        #~ loss_params = self.hearingLossParameter.get_configuration()
+
+        #DEBUG
+        loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
+        loss_params['right'] = loss_params['left']
+
+        
         simulator_params = self.simulatorParameter.get_configuration()
         simulator_engine = simulator_params.pop('simulator_engine')
         
@@ -142,8 +124,6 @@ class AudioDeviceMainWindow(CommonMainWindow):
     
     def setup_audio_stream(self):
         
-        self.setup_processing()
-        
         nb_channel = self.processing.nb_channel
         chunksize = self.processing.chunksize
         
@@ -165,17 +145,11 @@ class AudioDeviceMainWindow(CommonMainWindow):
         self.stream = sd.Stream(channels=nb_channel, callback=callback, samplerate=self.sample_rate,
                         blocksize=chunksize, latency=latency, device=self.audio_device)
         
-        self.but_start_stop.setEnabled(True)
-        self.but_enable_bypass.setEnabled(True)
-        
         self.audio_stream_done = True
-
-    def compute_filters(self):
-        with self.mutex:
-            try:
-                self.setup_audio_stream()
-            except Exception as e:
-                print(e)
+    
+    
+    def set_bypass(self, bypass):
+        self.processing.set_bypass(bypass)
 
 
     def running(self):
