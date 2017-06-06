@@ -13,11 +13,16 @@ class WifiDeviceWidget(QT.QWidget):
         
         self.client = client
         
-        mainlayout  =QT.QVBoxLayout()
+        mainlayout  =QT.QHBoxLayout()
         self.setLayout(mainlayout)
         
-        self.label_state = QT.QLabel('disconnected')
+        self.label_state = QT.QLabel('')
         mainlayout.addWidget(self.label_state)
+        
+        
+
+        self.label_param = QT.QLabel('')
+        mainlayout.addWidget(self.label_param)
         
         self.label_missing = QT.QLabel('')
         mainlayout.addWidget(self.label_missing)
@@ -38,6 +43,7 @@ class WifiDeviceWidget(QT.QWidget):
         
         #~ self.setEnabled(False)
         
+        self.refresh_label_state('disconnected')
         self.client.try_connection()
 
         
@@ -45,12 +51,13 @@ class WifiDeviceWidget(QT.QWidget):
         
         
     def on_state_changed(self, new_state):
-        self.label_state.setText(new_state)
+        #~ self.label_state.setText(new_state)
         
         if new_state=='connected':
             #~ self.timer_gains.start()
             self.timer_missing.stop()
             #~ self.setEnabled(True)
+            self.refresh_label_param()
         elif new_state=='disconnected':
             #~ self.timer_gains.stop()
             self.timer_missing.stop()
@@ -59,7 +66,19 @@ class WifiDeviceWidget(QT.QWidget):
             #~ self.timer_gains.stop()
             self.timer_missing.start()
             #~ self.setEnabled(True)
+        
+        self.refresh_label_state(new_state)
     
+    def refresh_label_state(self, new_state):
+        text = 'Wifi :{}'.format(new_state)
+        self.label_state.setText(text)
+    
+    def refresh_label_param(self):
+        sr = self.client.secure_call('get_sample_rate')
+        nb_lat = self.client.secure_call('get_audio_latency')
+        latency = nb_lat * 256 /sr*1000
+        text = 'sample_rate: {} \nnb_buffer_latency: {}  \nlatency: {:.1f}ms'.format(sr, nb_lat,latency)
+        self.label_param.setText(text)
     
     def refresh_missing_label(self):
         #~ print('refresh_missing_label')
