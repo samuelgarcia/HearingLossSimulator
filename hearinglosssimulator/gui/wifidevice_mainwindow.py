@@ -190,34 +190,58 @@ class WifiDeviceMainWindow(CommonMainWindow):
         actual_conf = self.wifiDeviceParameter.get_configuration()
         #~ print('actual_conf', actual_conf)
         
-        sr = self.client.secure_call('get_sample_rate')
-        lat = self.client.secure_call('get_audio_latency')
-        
-        print('sr', sr, 'lat', lat, type(lat))
-        
-        if sr is None or lat is None:
-            #an error occured
-            return False
         
         flag = True
+        
+        #~ print('sr', sr, 'lat', lat, type(lat))
+        
+        #sample_rate
+        sr = self.client.secure_call('get_sample_rate')
+        if sr is None:
+            #an error occured
+            return False
         if sr!=actual_conf['sample_rate']:
             flag = False
             self.warn('params', 'audio conf have change need wifi reset, please reconnect wifi')
             self.client.secure_call('set_sample_rate', actual_conf['sample_rate'])
-            #~ self.client.reset()
         
+        #latency
+        lat = self.client.secure_call('get_audio_latency')
+        if lat is None:
+            #an error occured
+            return False
         if lat!=actual_conf['nb_buffer_latency']:
             flag = False
             self.warn('params', 'audio conf have change need wifi reset, please reconnect wifi')
             self.client.secure_call('set_audio_latency', actual_conf['nb_buffer_latency'])
-            #~ self.client.reset()
         
-        #~ print('flag', flag)
+
+        #latency
+        speaker_gain = self.client.secure_call('get_speaker_gain')
+        if speaker_gain is None:
+            #an error occured
+            return False
+        if speaker_gain!=actual_conf['speaker_gain']:
+            flag = False
+            self.warn('params', 'audio conf have change need wifi reset, please reconnect wifi')
+            self.client.secure_call('set_speaker_gain', actual_conf['speaker_gain'])
+
+        #latency
+        microphone_gain = self.client.secure_call('get_microphone_gain')
+        if microphone_gain is None:
+            #an error occured
+            return False
+        if microphone_gain!=actual_conf['microphone_gain']:
+            flag = False
+            self.warn('params', 'audio conf have change need wifi reset, please reconnect wifi')
+            self.client.secure_call('set_microphone_gain', actual_conf['microphone_gain'])
         
+        
+        print(sr, lat, speaker_gain, microphone_gain)
         return flag
         
     
-    @DebugDecorator
+    #~ @DebugDecorator
     def start_stop_audioloop(self, checked):
         #~ a = 0/0
         print('start_stop_audioloop', checked)
