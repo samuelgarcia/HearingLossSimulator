@@ -4,6 +4,8 @@ from .common_mainwindow import *
 
 
 class AudioDeviceMainWindow(CommonMainWindow):
+    _prefix_application = 'AudioDevice_'
+    
     def __init__(self, parent = None):
         CommonMainWindow.__init__(self, parent)
 
@@ -72,7 +74,10 @@ class AudioDeviceMainWindow(CommonMainWindow):
         
         for name, act in self.actions.items():
             self.toolbar.addAction(act)
-
+    
+    def after_dialog(self):
+        self.change_audio_device()
+    
     def change_audio_device(self):
         self.calibrationWidget.device = self.audio_device
     
@@ -105,12 +110,12 @@ class AudioDeviceMainWindow(CommonMainWindow):
         params['calibration'] = calibration
         params['loss_params'] = loss_params
         params['bypass'] = self.but_enable_bypass.isChecked()
-        print(params)
+        #~ print(params)
         classes = {'InvCGC': hls.InvCGC, 'InvComp': hls.InvComp}
         _Class = classes[simulator_engine]
         #~ print(_Class)
         
-        print(self.sample_rate)
+        #~ print(self.sample_rate)
         self.processing = _Class(sample_rate=self.sample_rate, 
                     apply_configuration_at_init=False, use_filter_cache=True,
                     debug_mode=False, **params)
@@ -146,11 +151,26 @@ class AudioDeviceMainWindow(CommonMainWindow):
                         blocksize=chunksize, latency=latency, device=self.audio_device)
         
         self.audio_stream_done = True
+
+    def compute_filters(self):
+        print('compute_filters')
+        with self.mutex:
+            try:
+                self.setup_processing()
+                self.setup_audio_stream()
+            except Exception as e:
+                print(e)
+                
+            else:
+                self.but_start_stop.setEnabled(True)
+                self.but_enable_bypass.setEnabled(True)
     
     
     def set_bypass(self, bypass):
+        if self.processing is None:
+            return
         self.processing.set_bypass(bypass)
-
+        
 
     def running(self):
         if not self.audio_stream_done:

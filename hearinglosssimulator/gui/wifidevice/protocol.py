@@ -122,15 +122,14 @@ class ClientProtocol:
         }
     
     def get_params(self, param_type):
-        
         assert param_type in self.param_types.keys()
         
         option = self.param_types[param_type]
         
         self.send_one_packet(type=pt.GET_PARAMS, option=option)
         header, params = self.receiv_one_packet(timeout=pt.TIMEOUT_GET_PARAMS)
-        #~ if self.debug:
-            #~ print('get_params', header, params)
+        if self.debug:
+            print('get_params', header, params)
         assert header['type'] == pt.PARAMS_DATA
         
         for e in [0x00,0xff, 0x00,0xff, ]:
@@ -244,12 +243,20 @@ class ClientProtocol:
         assert latency>=2
         self.set_one_params('AUDIO_CONF', 'lat', str(latency).encode('ascii'))
 
-    
     def get_ssid(self):
         return self.get_one_params( 'NETWORK_CONF', 'ssid').decode('ascii')
     
     def set_ssid(self, new_ssid):
         self.set_one_params('NETWORK_CONF', 'ssid', new_ssid.encode('ascii'))
+        self.reset()
+
+    def get_sample_rate(self):
+        sr = self.get_one_params( 'AUDIO_CONF', 'freq')
+        sr = float(sr)
+        return  sr
+    
+    def set_sample_rate(self, sr):
+        self.set_one_params('AUDIO_CONF', 'freq', str(sr).encode('ascii'))
         self.reset()
 
 

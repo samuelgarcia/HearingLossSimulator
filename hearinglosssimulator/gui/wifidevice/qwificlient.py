@@ -279,7 +279,7 @@ class QWifiClient(QT.QObject):
         print('stop_loop', stream_type)
         state = stream_type+'-loop'
         assert state == state
-        print('ici', self.active_thread)
+        print('stop_loop active_thread', self.active_thread)
 
         self.active_thread.stop()
         self.active_thread.wait()
@@ -316,37 +316,31 @@ class QWifiClient(QT.QObject):
         self.change_state('disconnected')
         self.try_connection()
     
-    def get_params(self, param_type):
-        assert self.state == 'connected'
+    def secure_call(self, method_name, *args, **kargs):
+        """
+        Utility for to map client_protocol.:
+          get_one_param/set_one_param/get_sample_rate/set_sample_rate/...
+        """
+        print('secure_call:',  method_name, args, kargs)
+
+        assert self.state == 'connected', 'client.secure_call not connected'
         self.timer_ping.stop()
         
-        try:
-            params = self.client_protocol.get_params(param_type)
-            self.timer_ping.start()
-            
-            return params
-        except Exception as e:
-            print('ERROR GET_PARAMS', e)
-            self.change_state('disconnected')
-            self.try_connection()
-    
-    
-    def set_params(self, param_type, params):
-        assert self.state == 'connected'
-        self.timer_ping.stop()
+        method = getattr(self.client_protocol, method_name)
+        #~ print('method', method)
         
         try:
-            self.client_protocol.set_params(param_type, params)
+            ret = method(*args, **kargs)
             self.timer_ping.start()
+            return ret
             
         except Exception as e:
-            print('ERROR SET_PARAMS', e)
+            print('secure_call', e)
             self.change_state('disconnected')
             self.try_connection()
+            return None
+
     
-
-
-
 
     
     

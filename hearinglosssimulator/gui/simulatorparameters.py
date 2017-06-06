@@ -16,8 +16,10 @@ from hearinglosssimulator.gui.guitools import get_dict_from_group_param
 # engine
 
 _params = [
-    {'name': 'simulator_engine', 'type': 'list', 'values': ['InvComp', 'InvCGC'] },
     {'name': 'nb_channel', 'type': 'int', 'value': 2 },
+    
+    {'name': 'simulator_engine', 'type': 'list', 'values': ['InvComp', 'InvCGC'] },
+    
     #~ {'name': 'dtype', 'type': 'list', 'values': ['float32'] },
     {'name': 'nb_freq_band', 'type': 'int', 'value': 32 },
     {'name': 'low_freq', 'type': 'float', 'value':100., 'suffix': 'Hz', 'siPrefix': True},
@@ -34,14 +36,18 @@ _params = [
 
 
 class SimulatorParameter(QT.QWidget):
-    def __init__(self, parent = None):
+    def __init__(self, with_all_params=True, parent = None):
         QT.QWidget.__init__(self, parent)
         mainlayout  =QT.QVBoxLayout()
         self.setLayout(mainlayout)
         self.resize(400, 400)
 
+        if with_all_params:
+            children = _params
+        else:
+            children = _params[1:-2]
         
-        self.params = pg.parametertree.Parameter.create(name='simulator', type='group', children = _params)
+        self.params = pg.parametertree.Parameter.create(name='simulator', type='group', children=children)
         
         #~ layout = QT.QVBoxLayout()
         #~ self.setLayout(layout)

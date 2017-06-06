@@ -175,7 +175,7 @@ class InvComp(BaseMultiBand):
         assert data.shape == (self.chunksize, self.nb_channel), 'data.shape error {} {}'.format(data.shape, (self.chunksize, self.nb_channel))
         
         returns = {}
-        
+        #~ print('ICIICIICICICIC', self.bypass)
         if self.bypass:
             assert not asynch
             # TODO make same latency as proccessing

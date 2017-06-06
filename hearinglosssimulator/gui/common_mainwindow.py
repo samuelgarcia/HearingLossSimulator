@@ -32,6 +32,8 @@ class Mutex(QT.QMutex):
 
 
 class CommonMainWindow(QT.QMainWindow):
+    _prefix_application = ''
+    
     def __init__(self, parent = None):
         QT.QMainWindow.__init__(self, parent)
         
@@ -53,17 +55,19 @@ class CommonMainWindow(QT.QMainWindow):
         self.but_compute_filters.clicked.connect(self.compute_filters)
         h.addWidget(self.but_compute_filters)
         
-        self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable = True, enabled= False)
+        self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable=True, enabled=False)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
         self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
         h.addWidget(self.but_start_stop)
 
-        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable = True, enabled=False)
+        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable=True, enabled=False)
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
         h.addWidget(self.but_enable_bypass)
         
         
         self.mutex = Mutex()
+        
+        self.processing = None
 
     
     def flash_icon(self):
@@ -79,7 +83,7 @@ class CommonMainWindow(QT.QMainWindow):
 
     def warn(self, title, text):
         mb = QT.QMessageBox.warning(self, title,text, 
-                QT.QMessageBox.Ok ,  QT.QMessageBox.Default  | QT.QMessageBox.Escape,
+                QT.QMessageBox.Ok ,  #QT.QMessageBox.Default  | QT.QMessageBox.Escape,
                 QT.QMessageBox.NoButton)
 
     def closeEvent (self, event):
@@ -93,11 +97,11 @@ class CommonMainWindow(QT.QMainWindow):
     @property
     def filename(self):
         if sys.platform.startswith('win'):
-            dirname = os.path.join(os.environ['APPDATA'], 'HearingLossSimulator')
+            dirname = os.path.join(os.environ['APPDATA'], self._prefix_application+'HearingLossSimulator')
         elif  sys.platform.startswith('darwin'):
-            dirname = '~/Library/Application Support/HearingLossSimulator/'
+            dirname = '~/Library/Application Support/{}HearingLossSimulator/'.format(self._prefix_application)
         else:
-            dirname = os.path.expanduser('~/.config/HearingLossSimulator')
+            dirname = os.path.expanduser('~/.config/{}HearingLossSimulator'.format(self._prefix_application))
             
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -110,7 +114,8 @@ class CommonMainWindow(QT.QMainWindow):
         
         attr['dia'].exec_()
         self.save_configuration()
-        self.change_audio_device()
+        self.after_dialog()
+        #~ self.change_audio_device()
     
     
     @property
@@ -123,9 +128,12 @@ class CommonMainWindow(QT.QMainWindow):
 
 
     def save_configuration(self):
+        
         all_config = {k:e.get_configuration() for k, e in self.configuration_elements.items()}
+        print(all_config)
         with open(self.filename, 'w', encoding='utf8') as fd:
             json.dump(all_config, fd, indent = 4)
+        print('save_configuration OK')
     
     def load_configuration(self):
         if not os.path.exists(self.filename): return
@@ -152,9 +160,8 @@ class CommonMainWindow(QT.QMainWindow):
                 print(e)
                 
             else:
-                self.but_start_stop.setEnabled(True)
+                #~ self.but_start_stop.setEnabled(True)
                 self.but_enable_bypass.setEnabled(True)
-                
     
     
     def enable_bypass_simulator(self, checked):
@@ -164,7 +171,7 @@ class CommonMainWindow(QT.QMainWindow):
             self.but_enable_bypass.setIcon(QT.QIcon.fromTheme('process-stop'))
         else:
             self.but_enable_bypass.setIcon(QT.QIcon.fromTheme(''))
-            
+    
     
     def running(self):
         raise(NotImplemented)
