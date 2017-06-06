@@ -13,7 +13,19 @@ import time
 udp_ip = "192.168.1.1"
 udp_port = 6666
 
-
+def DebugDecorator(func):
+    def wrapper(*args, **kargs):
+        print('DebugDecorator', *args, *kargs)
+        try:
+            ret = func(*args, **kargs)
+            return ret
+        except Exception as e:
+            print('#'*20)
+            print('# ERROR IN {}'.format(func) * 5 )
+            print('#', e)
+            print('#'*20)
+    return wrapper    
+    
 
 class ThreadSimulatorAudioStream(BaseThreadStream):
     
@@ -94,6 +106,7 @@ class WifiDeviceMainWindow(CommonMainWindow):
         self.thread_simulator.set_processing(None)
         
         self.simulatorParameter = SimulatorParameter(with_all_params=False, parent=self)
+        self.gpuDeviceSelection = GpuDeviceSelection(parent=self)
         self.wifiDeviceParameter = WifiDeviceParameter(parent=self)
         
         self.createActions()
@@ -109,6 +122,7 @@ class WifiDeviceMainWindow(CommonMainWindow):
 
         self.configuration_elements = { 'wifidevice' : self.wifiDeviceParameter,
                                                 #~ 'hearingloss' : self.hearingLossParameter,
+                                                'gpudevice' : self.gpuDeviceSelection,
                                                 'simulator_wifi' :  self.simulatorParameter,
                                                 }
         self.load_configuration()        
@@ -121,8 +135,8 @@ class WifiDeviceMainWindow(CommonMainWindow):
 
         
         self.dialogs = OrderedDict([
-                                
                                 ('Simulator', {'widget' :self.simulatorParameter}),
+                                ('Configure GPU', {'widget' :self.gpuDeviceSelection}), 
                                 ('Wifi Device', {'widget' :self.wifiDeviceParameter}),
                                 
                             ])
@@ -203,8 +217,9 @@ class WifiDeviceMainWindow(CommonMainWindow):
         return flag
         
     
-    
+    @DebugDecorator
     def start_stop_audioloop(self, checked):
+        #~ a = 0/0
         print('start_stop_audioloop', checked)
         
         if checked:
@@ -260,9 +275,12 @@ class WifiDeviceMainWindow(CommonMainWindow):
                     apply_configuration_at_init=False, use_filter_cache=True,
                     debug_mode=False, **params)
         
-        #~ self.processing.create_opencl_context(
-                #~ gpu_platform_index = self.gpu_platform_index,
-                #~ gpu_device_index = self.gpu_device_index,)
+        platform_index = self.gpuDeviceSelection.get_configuration()['platform_index']
+        device_index = self.gpuDeviceSelection.get_configuration()['device_index']
+        self.processing.create_opencl_context(
+                gpu_platform_index = platform_index,
+                gpu_device_index = device_index)
+
         
         self.processing.initialize()
         

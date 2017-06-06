@@ -121,9 +121,11 @@ class AudioDeviceMainWindow(CommonMainWindow):
                     debug_mode=False, **params)
         
         
+        platform_index = self.gpuDeviceSelection.get_configuration()['platform_index']
+        device_index = self.gpuDeviceSelection.get_configuration()['device_index']
         self.processing.create_opencl_context(
-                gpu_platform_index = self.gpu_platform_index,
-                gpu_device_index = self.gpu_device_index,)
+                gpu_platform_index = platform_index,
+                gpu_device_index = device_index)
         
         self.processing.initialize()
     

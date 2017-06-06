@@ -117,14 +117,7 @@ class CommonMainWindow(QT.QMainWindow):
         self.after_dialog()
         #~ self.change_audio_device()
     
-    
-    @property
-    def gpu_platform_index(self):
-        return self.gpuDeviceSelection.get_configuration()['platform_index']
 
-    @property
-    def gpu_device_index(self):
-        return self.gpuDeviceSelection.get_configuration()['device_index']
 
 
     def save_configuration(self):
