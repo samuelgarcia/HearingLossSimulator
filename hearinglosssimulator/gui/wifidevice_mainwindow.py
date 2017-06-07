@@ -8,23 +8,53 @@ from hearinglosssimulator.gui.wifidevice.wifidevicewidget import WifiDeviceWidge
 from hearinglosssimulator.gui.wifidevice.wifideviceparameters import WifiDeviceParameter
 
 
+"""
+Calmibration date 2017-06-07
+
+Note on calibration for the wifidevice and the headhone TechnoFirst:
+  * microphone_gain=+20dB for a sinus (1000Hz, 76.7dBSPL) we have 26.5dBfs So calibration=103dB
+  * speaker_gain=+0dB for a sinus (1000Hz, -10dBFs) wa have 77.9 dBSPL So calibration=88dB. Over this value wa have a gain saturation.
+
+So we keep calibration=103.
+This is OK for input and for output we add a fake gain of 15dB (=10**(15/20)=5.62) before sending output to the device.
+
+
+
+"""
+
+
 import time
 
 udp_ip = "192.168.1.1"
 udp_port = 6666
 
-def DebugDecorator(func):
-    def wrapper(*args, **kargs):
-        print('DebugDecorator', *args, *kargs)
-        try:
-            ret = func(*args, **kargs)
-            return ret
-        except Exception as e:
-            print('#'*20)
-            print('# ERROR IN {}'.format(func) * 5 )
-            print('#', e)
-            print('#'*20)
-    return wrapper    
+#for debug
+from hearinglosssimulator.gui.myqt import DebugDecorator
+
+
+calibration = 103
+output_gain_compensation = 2**(15./20.)
+
+def apply_gain_and_cast(sound_buffer):
+    """
+    This apply the gain due to calibration clip and cast.
+    """
+    if sound_buffer.dtype ==np.dtype('int16'):
+        sound_buffer =sound_buffer.astype('float32')
+    else:
+        sound_buffer = sound_buffer * 2**15
+    
+    sound_buffer *= output_gain_compensation
+    
+    sound_buffer[sound_buffer>(2**15-1)] = 2**15-1
+    sound_buffer[sound_buffer<(-2**15+1)] = -2**15+1
+    
+    return sound_buffer.astype('int16')
+    
+    
+    
+    
+    
     
 
 class ThreadSimulatorAudioStream(BaseThreadStream):
@@ -46,34 +76,38 @@ class ThreadSimulatorAudioStream(BaseThreadStream):
     def finalize_loop(self):
         pass
     
-    def process_one_packet(self, header, data):
+    def process_one_packet(self, header, data_buffer_in):
         print('process_one_packet')
         packet_type = pt.AUDIO_DATA
         option = header['option']
         with self.lock:
             if self.bypass:
                 print('process_one_packet bypass')
-                variable = data
+                sound_in_int = np.frombuffer(data_buffer_in, dtype='int16')
+                sound_out_int = apply_gain_and_cast(sound_in_int)
+                
             else:
                 t0 = time.perf_counter()
                 print('process_one_packet nobypass')
-                data_float = np.frombuffer(data, dtype='int16').astype('float32').reshape(256, 2)
-                data_float /= 2**15
+                sound_in_float = np.frombuffer(data_buffer_in, dtype='int16').astype('float32').reshape(256, 2)
+                sound_in_float /= 2**15
                 self.index += 256
-                print('self.index', self.index, data_float.shape)
-                returns = self.processing.proccesing_func(self.index, data_float)
-                index2, data_out = returns['main_output']
+                print('self.index', self.index, sound_in_float.shape)
+                returns = self.processing.proccesing_func(self.index, sound_in_float)
+                index2, sound_out_float = returns['main_output']
+                
                 print('index2', index2)
                 if index2 is not None:
-                    data_out_int = (data_out*2**15).astype('int16')
+                    sound_out_int = apply_gain_and_cast(sound_out_float)
                 else:
-                    data_out_int = self.empty_out
+                    sound_out_int = self.empty_out
                 
-                variable = data_out_int.tobytes()
+                
                 t1 = time.perf_counter()
                 #~ print(int(t1-t0)*1000/1000., 'ms')
                 print(t1-t0, 's')
-            
+        
+        variable = sound_out_int.tobytes()
         return packet_type, option, variable
     
     def set_processing(self, processing):
@@ -176,7 +210,8 @@ class WifiDeviceMainWindow(CommonMainWindow):
         return self.client.state=='audio-loop'
 
     def after_dialog(self):
-        pass
+        self.check_wifi_params()
+        self.devicewidget.refresh_label_param()
     
     @property
     def sample_rate(self):
@@ -270,7 +305,6 @@ class WifiDeviceMainWindow(CommonMainWindow):
     def setup_processing(self):
         print('setup_processing')
         # take from UI
-        calibration = 100. #TODO put 
         
         #~ loss_params = self.hearingLossParameter.get_configuration()
         

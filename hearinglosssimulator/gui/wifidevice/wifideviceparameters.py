@@ -8,12 +8,14 @@ import sounddevice as sd
 
 from hearinglosssimulator.gui.guitools import get_dict_from_group_param
 
+
+
 _params = [
     {'name': 'nb_buffer_latency', 'type': 'int', 'value': 6},
     {'name': 'sample_rate', 'type': 'float', 'value':44100., 'suffix': 'Hz', 'siPrefix': True},
     
-    {'name': 'speaker_gain', 'type': 'float', 'value':10., 'limits': (-63.5, 24.), 'step' :0.5, 'suffix': 'dB', 'siPrefix': True},
-    {'name': 'microphone_gain', 'type': 'float', 'value':10.,  'limits': (-12, 20.), 'step' :0.5, 'suffix': 'dB', 'siPrefix': True},
+    {'name': 'speaker_gain', 'type': 'float', 'value':0., 'limits': (-63.5, 24.), 'step' :0.5, 'suffix': 'dB', 'siPrefix': True},
+    {'name': 'microphone_gain', 'type': 'float', 'value':20.,  'limits': (-12, 20.), 'step' :0.5, 'suffix': 'dB', 'siPrefix': True},
     
     
 ]
