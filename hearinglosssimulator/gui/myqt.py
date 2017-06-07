@@ -48,4 +48,17 @@ elif QT_MODE == 'PyQt4':
 
 from pyqtgraph import mkQApp
 
+def DebugDecorator(func):
+    def wrapper(*args, **kargs):
+        print('DebugDecorator', *args, *kargs)
+        try:
+            ret = func(*args, **kargs)
+            return ret
+        except Exception as e:
+            print('#'*20)
+            print('# ERROR IN {}'.format(func) * 5 )
+            print('#', e)
+            print('#'*20)
+    return wrapper    
+
 
