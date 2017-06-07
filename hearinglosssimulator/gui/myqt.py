@@ -48,6 +48,8 @@ elif QT_MODE == 'PyQt4':
 
 from pyqtgraph import mkQApp
 
+from . import icons
+
 def DebugDecorator(func):
     def wrapper(*args, **kargs):
         print('DebugDecorator', *args, *kargs)

@@ -77,6 +77,8 @@ class AudioDeviceMainWindow(CommonMainWindow):
     
     def after_dialog(self):
         self.change_audio_device()
+        nb_channel = self.simulatorParameter.get_configuration()['nb_channel']
+        self.hearingLossParameter.set_nb_channel(nb_channel)
     
     def change_audio_device(self):
         self.calibrationWidget.device = self.audio_device

@@ -147,15 +147,21 @@ class WifiDeviceMainWindow(CommonMainWindow):
         self.createToolBars()
         
         # central layout
-        self.resize(800, 600)
+        self.resize(1000,800)
         self.mainlayout.insertWidget(0, QT.QLabel(u'<h1><b>Wifi Device State/Conf</b>'))
         self.devicewidget = WifiDeviceWidget(self.client, parent=self)
         self.mainlayout.insertWidget (1,  self.devicewidget)
 
+
+        self.mainlayout.addWidget(QT.QLabel(u'<h1><b>Setup loss on each ear</b>'))
+        self.hearingLossParameter = HearingLossParameter()
+        self.mainlayout.addWidget(self.hearingLossParameter)
+
+
         self.mainlayout.addStretch()
 
         self.configuration_elements = { 'wifidevice' : self.wifiDeviceParameter,
-                                                #~ 'hearingloss' : self.hearingLossParameter,
+                                                'hearingloss' : self.hearingLossParameter,
                                                 'gpudevice' : self.gpuDeviceSelection,
                                                 'simulator_wifi' :  self.simulatorParameter,
                                                 }

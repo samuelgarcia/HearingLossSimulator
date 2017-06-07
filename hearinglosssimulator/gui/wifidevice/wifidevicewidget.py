@@ -70,7 +70,15 @@ class WifiDeviceWidget(QT.QWidget):
         self.refresh_label_state(new_state)
     
     def refresh_label_state(self, new_state):
-        text = 'Wifi :{}'.format(new_state)
+        
+        #~ text = 'Wifi :{}'.format(new_state)
+        img = {'connected': 'led-green.jpg',
+                'disconnected': 'led-red.jpg',
+                'audio_loop': 'led-blue.jpg',
+                
+                }[new_state]
+        text = "<html><img src=':/{img}' height='42' width='42'>{state}</html>".format(img=img, state=new_state)
+        
         self.label_state.setText(text)
     
     def refresh_label_param(self):

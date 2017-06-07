@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource>
+            <file alias="led-blue.jpg">png/led-blue.jpg</file>
+            <file alias="led-red.jpg">png/led-red.jpg</file>
+            <file alias="led-green.jpg">png/led-green.jpg</file>
+    </qresource>
+</RCC>
