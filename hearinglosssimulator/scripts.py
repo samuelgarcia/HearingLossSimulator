@@ -69,8 +69,8 @@ def hls():
 
 
 if __name__=='__main__':
-    #~ open_audiodevice_mainwindow()
-    open_wifidevice_mainwindow()
+    open_audiodevice_mainwindow()
+    #~ open_wifidevice_mainwindow()
 
 
 

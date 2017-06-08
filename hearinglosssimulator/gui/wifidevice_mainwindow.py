@@ -312,16 +312,20 @@ class WifiDeviceMainWindow(CommonMainWindow):
         print('setup_processing')
         # take from UI
         
-        #~ loss_params = self.hearingLossParameter.get_configuration()
+        loss_params = self.hearingLossParameter.get_configuration()
         
         #DEBUG
-        loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
-        loss_params['right'] = loss_params['left']
+        #~ loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
+        #~ loss_params['right'] = loss_params['left']
         
-        #~ simulator_params = self.simulatorParameter.get_configuration()
-        #~ simulator_engine = simulator_params.pop('simulator_engine')
-        simulator_params =  dict(chunksize=256, backward_chunksize=256+1024, nb_channel=2)
-        simulator_engine = 'InvComp'
+        simulator_params = self.simulatorParameter.get_configuration()
+        simulator_engine = simulator_params.pop('simulator_engine')
+        simulator_params['chunksize'] =  256
+        simulator_params['backward_chunksize'] =  256+1024
+        simulator_params['nb_channel'] =  2
+        
+        print('simulator_engine', simulator_engine)
+        print(simulator_params)
         
         #make params
         params ={}
@@ -334,7 +338,7 @@ class WifiDeviceMainWindow(CommonMainWindow):
         _Class = classes[simulator_engine]
         #~ print(_Class)
         
-        #~ print(self.sample_rate)
+        print(self.sample_rate)
         self.processing = _Class(sample_rate=self.sample_rate, 
                     apply_configuration_at_init=False, use_filter_cache=True,
                     debug_mode=False, **params)

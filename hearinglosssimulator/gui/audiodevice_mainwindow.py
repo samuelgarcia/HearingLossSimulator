@@ -96,11 +96,18 @@ class AudioDeviceMainWindow(CommonMainWindow):
         #~ print('setup_processing')
         # take from UI
         calibration = self.calibrationWidget.get_configuration()['spl_calibration_at_zero_dbfs']
-        #~ loss_params = self.hearingLossParameter.get_configuration()
+        
+        loss_params = self.hearingLossParameter.get_configuration()
 
         #DEBUG
         loss_params = { 'left' : {'freqs' : [ 125*2**i  for i in range(7) ], 'compression_degree': [0]*7, 'passive_loss_db' : [0]*7 } }
         loss_params['right'] = loss_params['left']
+        
+        for k in loss_params:
+            print(k)
+            print(loss_params[k]['freqs'])
+            print(loss_params[k]['compression_degree'])
+            print(loss_params[k]['passive_loss_db'])
 
         
         simulator_params = self.simulatorParameter.get_configuration()
