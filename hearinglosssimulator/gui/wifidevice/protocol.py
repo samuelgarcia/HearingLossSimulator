@@ -8,6 +8,9 @@ import numpy as np
 from  . import packet_types as pt
 
 
+class NoAckError(Exception):
+    pass
+
 class ClientProtocol:
     def __init__(self, udp_ip, udp_port, debug=False):
         
@@ -50,6 +53,7 @@ class ClientProtocol:
         #~ print('data',  len(data))
         
         header = np.frombuffer(data[:pt.header_size], dtype=pt.frame_header)[0]
+        #~ print('receiv header', header)
         if self.debug:
             print('receiv header', header)
         if header['length']>0:
@@ -61,16 +65,22 @@ class ClientProtocol:
             return header, None
     
     def wait_for_ack(self, timeout_per_packet=0.5, nb_try=3, reason=''):
+        #~ print('wait_for_ack', timeout_per_packet, nb_try )
         done = False
         for i in range(nb_try):
+            #~ print('i', i)
             header, data = self.receiv_one_packet(timeout=timeout_per_packet)
+            #~ print(header)
             if header['type'] == pt.ACK and header['option'] == self.packet_num:
                 done = True
                 break
             if header['type'] == pt.ACK and header['option'] == 0:
-                raise(Exception('NO-ACK'))
+                raise(NoAckError('NO-ACK'))
         
-        assert done, 'No ACK for packet {} {}'.format(self.packet_num, reason)
+        #~ assert done, 'No ACK for packet {} {}'.format(self.packet_num, reason)
+        if not done:
+            raise(NoAckError('NO-ACK for packet {} {}'.format(self.packet_num, reason)))
+        
         if self.debug:
             print('ACK for packet {} {}'.format(self.packet_num, reason))
     
@@ -100,14 +110,19 @@ class ClientProtocol:
                 self.wait_for_ack(reason='STOP_STREAM '+ stream_type, nb_try=10)
             except:
                 for i in range(5):
+                    print('NEW TRY stop stream', i)
                     try:
                         self.send_one_packet(type=pt.STOP_STREAM, option=pt.stream_types[stream_type])
-                        self.send_one_packet(type=pt.CONNECTION)
-                        self.wait_for_ack(reason='CONNECTION')
-                        self.ping_pong()
+                        self.wait_for_ack(reason='STOP_STREAM '+ stream_type,  timeout_per_packet=0.1, nb_try=3,)
+                        #~ self.send_one_packet(type=pt.CONNECTION)
+                        #~ self.wait_for_ack(reason='CONNECTION')
+                        #~ self.ping_pong()
                         break
                     except:
-                        print('CONNECTION after stop stream fail', i)
+                        print('NEW TRY stop stream  FAIL', i)
+                        #~ print('CONNECTION after stop stream fail', i)
+                
+                raise(Exception('STOP STREAM: All temptative fail!!'))
                 
         else:
             self.wait_for_ack(reason='STOP_STREAM '+ stream_type, nb_try=10)

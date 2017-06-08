@@ -2,7 +2,9 @@
 from ..myqt import QT
 import pyqtgraph as pg
 
-from .protocol import ClientProtocol
+from hearinglosssimulator.gui.myqt import DebugDecorator
+
+from .protocol import ClientProtocol, NoAckError
 
 
 import time
@@ -105,12 +107,13 @@ class BaseThreadStream(QT.QThread):
                         n = int(header['option']&0x0000FFFF)
                         #~ self.too_late_packet.emit(n)
                         self.nb_too_late += n
-                        
                 
-                packet_type, option, variable = self.process_one_packet(header, data)
-                if packet_type is not None:
-                    self.client_protocol.send_one_packet(type=pt.AUDIO_DATA, option=header['option'], variable=variable)
-                
+                if data is not None and header['type'] in (pt.AUDIO_DATA, pt.TEST_DATA, pt.SPAT_DATA):
+                    packet_type, option, variable = self.process_one_packet(header, data)
+                    if packet_type is not None:
+                        self.client_protocol.send_one_packet(type=pt.AUDIO_DATA, option=header['option'], variable=variable)
+                else:
+                    print('PACKET NON DATA in stream loop!!!', header)
                 
             except socket.timeout as e:
                 print('erreur stream timeout', e)
@@ -195,6 +198,9 @@ class QWifiClient(QT.QObject):
         self.timer_try_connect.timeout.connect(self._try_connection)
         self.timer_ping = QT.QTimer(singleShot=False, interval=int(pt.PING_INTERVAL*1000.))
         self.timer_ping.timeout.connect(self._ping)
+        self.timer_sleep = QT.QTimer(singleShot=True)
+        self.timer_sleep.timeout.connect(self.after_sleep)
+        
         
         self.thread_audiostream = ThreadAudioStream(self.client_protocol, parent=self)
         self.thread_audiostream.connection_broken.connect(self.on_connection_broken)
@@ -212,6 +218,19 @@ class QWifiClient(QT.QObject):
         with self.mutex:
             self.state = new_state
             self.state_changed.emit(self.state)
+    
+    def sleep_for_a_while(self, duration):
+        print('sleep_for_a_while', duration)
+        if self.timer_try_connect.isActive():
+            self.timer_try_connect.stop()
+        self.timer_sleep.setInterval(int(duration*1000.))
+        self.timer_sleep.start()
+    
+    @DebugDecorator
+    def after_sleep(self, ):
+        c = self.client_protocol
+        self.client_protocol = ClientProtocol(c.udp_ip, c.udp_port, debug=c.debug)
+        self.try_connection()
     
     def try_connection(self):
         assert self.state == 'disconnected'
@@ -235,8 +254,12 @@ class QWifiClient(QT.QObject):
             self.start_ping()
         except socket.timeout as e:
             print('erreur CONNECTION timeout', e)
+        except NoAckError as e:
+            print('erreur CONNECTION NoAckError', e)
+            self.sleep_for_a_while(3.)
         except Exception as e:
             print('erreur CONNECTION other problem', e)
+            self.sleep_for_a_while(3.)
     
 
     def start_ping(self):
@@ -286,14 +309,19 @@ class QWifiClient(QT.QObject):
         self.active_thread = None
         
         try:
-            self.client_protocol.send_stop_stream(stream_type=stream_type)
+            self.client_protocol.send_stop_stream(stream_type=stream_type, insist=True)
             self.change_state('connected')
             self.start_ping()
             
         except Exception as e:
-            print('ERROR STOP_STREAM', stream_type, e)
+            print('ERROR stop_loop', stream_type, e)
+            #~ time.sleep(2.)
+            # IN CASE of error new do send nothing, so th wifi device
+            # break the conenction
+            #TODO fix this:
             self.change_state('disconnected')
-            self.try_connection()
+            #~ self.try_connection()
+            self.sleep_for_a_while(3.)
         
 
     def start_audio_loop(self):
@@ -314,7 +342,8 @@ class QWifiClient(QT.QObject):
         
         thread.wait()
         self.change_state('disconnected')
-        self.try_connection()
+        self.sleep_for_a_while(3.)
+        #~ self.try_connection()
     
     def secure_call(self, method_name, *args, **kargs):
         """

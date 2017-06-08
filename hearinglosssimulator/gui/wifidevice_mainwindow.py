@@ -77,35 +77,35 @@ class ThreadSimulatorAudioStream(BaseThreadStream):
         pass
     
     def process_one_packet(self, header, data_buffer_in):
-        print('process_one_packet')
+        #~ print('process_one_packet')
         packet_type = pt.AUDIO_DATA
         option = header['option']
         with self.lock:
             if self.bypass:
-                print('process_one_packet bypass')
+                #~ print('process_one_packet bypass')
                 sound_in_int = np.frombuffer(data_buffer_in, dtype='int16')
                 sound_out_int = apply_gain_and_cast(sound_in_int)
                 
             else:
-                t0 = time.perf_counter()
-                print('process_one_packet nobypass')
+                #~ t0 = time.perf_counter()
+                #~ print('process_one_packet nobypass')
                 sound_in_float = np.frombuffer(data_buffer_in, dtype='int16').astype('float32').reshape(256, 2)
                 sound_in_float /= 2**15
                 self.index += 256
-                print('self.index', self.index, sound_in_float.shape)
+                #~ print('self.index', self.index, sound_in_float.shape)
                 returns = self.processing.proccesing_func(self.index, sound_in_float)
                 index2, sound_out_float = returns['main_output']
                 
-                print('index2', index2)
+                #~ print('index2', index2)
                 if index2 is not None:
                     sound_out_int = apply_gain_and_cast(sound_out_float)
                 else:
                     sound_out_int = self.empty_out
                 
                 
-                t1 = time.perf_counter()
+                #~ t1 = time.perf_counter()
                 #~ print(int(t1-t0)*1000/1000., 'ms')
-                print(t1-t0, 's')
+                #~ print(t1-t0, 's')
         
         variable = sound_out_int.tobytes()
         return packet_type, option, variable

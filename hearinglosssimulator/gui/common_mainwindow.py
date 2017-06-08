@@ -60,7 +60,7 @@ class CommonMainWindow(QT.QMainWindow):
         self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
         h.addWidget(self.but_start_stop)
 
-        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable=True, enabled=False)
+        self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable=True, enabled=False, checked=True)
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
         h.addWidget(self.but_enable_bypass)
         
