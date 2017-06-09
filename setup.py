@@ -32,7 +32,7 @@ version = open("./hearinglosssimulator/version.py").readline().split('=')[1].rep
 setup(
     name = "hearinglosssimulator",
     version = version,
-    packages = ['hearinglosssimulator', 'hearinglosssimulator.gui', ],
+    packages = ['hearinglosssimulator', 'hearinglosssimulator.gui', 'hearinglosssimulator.gui.icons', 'hearinglosssimulator.gui.wifidevice',],
     install_requires=install_requires,
     extras_require = extras_require,
     package_data = package_data,
