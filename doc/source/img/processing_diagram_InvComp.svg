@@ -15,7 +15,7 @@
    id="svg4136"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="processing_diagram.svg">
+   sodipodi:docname="processing_diagram_InvComp.svg">
   <defs
      id="defs4138">
     <marker
@@ -805,7 +805,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="498.58894"
+     inkscape:cx="177.04202"
      inkscape:cy="279.9686"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -814,8 +814,8 @@
      inkscape:snap-grids="false"
      inkscape:snap-to-guides="false"
      inkscape:window-width="1680"
-     inkscape:window-height="953"
-     inkscape:window-x="0"
+     inkscape:window-height="1021"
+     inkscape:window-x="1680"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:snap-bbox="true" />
@@ -827,7 +827,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -858,14 +858,14 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="331.62695"
-       y="817.8075"
+       x="301.62695"
+       y="811.8075"
        id="text4684-3"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4686-6"
-         x="331.62695"
-         y="817.8075">HPAF</tspan></text>
+         x="301.62695"
+         y="811.8075">DynaGain</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -915,25 +915,21 @@
        id="text4746"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
-         id="tspan4748"
          x="288.62158"
-         y="579.505">Highpass</tspan><tspan
+         y="579.505"
+         id="tspan4756">Dynamic</tspan><tspan
          sodipodi:role="line"
          x="288.62158"
          y="610.755"
-         id="tspan4750">filter</tspan><tspan
+         id="tspan4634">gain</tspan><tspan
          sodipodi:role="line"
          x="288.62158"
          y="642.005"
-         id="tspan4752">dynamically</tspan><tspan
+         id="tspan4636">controlled</tspan><tspan
          sodipodi:role="line"
          x="288.62158"
          y="673.255"
-         id="tspan4754">controled</tspan><tspan
-         sodipodi:role="line"
-         x="288.62158"
-         y="704.505"
-         id="tspan4756">by level</tspan></text>
+         id="tspan4638">by level</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -1026,18 +1022,22 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="346.6727"
-       y="416.64792"
+       x="350.6727"
+       y="384.64792"
        id="text17102"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
-         x="346.6727"
-         y="416.64792"
+         x="350.6727"
+         y="384.64792"
          id="tspan17106">Dynamic Gammachirp</tspan><tspan
          sodipodi:role="line"
-         x="346.6727"
-         y="447.89792"
-         id="tspan4595">Inverse compressive</tspan></text>
+         x="350.6727"
+         y="415.89792"
+         id="tspan4595">Inverse compressive</tspan><tspan
+         sodipodi:role="line"
+         x="350.6727"
+         y="447.14792"
+         id="tspan4619">InvComp variante</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:25px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"

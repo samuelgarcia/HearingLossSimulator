@@ -177,7 +177,7 @@ For more detail you should read at leat these references:
 
 The main processing diagram is the following:
 
-.. image:: img/processing_diagram.png
+.. image:: img/processing_diagram_InvCGC.png
 
 Steps:
   1. **PGC1** : The input sound is filtered by a bank of N passive gammachirp filter. N is typically 32.
@@ -214,6 +214,13 @@ Here is the input/output inverse compressive gammachrip. It is than an expander.
 
 .. image:: img/input_output_gain.png
 
+
+
+We also design a variante of this diagram: **InvComp**. In **InvComp** HPAF is replaced  by a
+dynamical gain controlled by the level. The input/output gain follow the same
+law than the **InvCGC**.
+
+.. image:: img/processing_diagram_InvComp.png
 
 
 Algorithm parameters
