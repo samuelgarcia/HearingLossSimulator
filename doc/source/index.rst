@@ -99,10 +99,10 @@ Step 1 - Case 2 : with pip (prefered on linux)
 
 In a terminal in ubuntu 16.04 do::
 
-  sudo apt-get install virtualenvwrapper
+  sudo apt-get install virtualenvwrapper python3.5-dev python3-tk
   mkvirtualenv hls   --python=/usr/bin/python3.5
   workon hls 
-  sudo portaudio19-dev
+  sudo apt-get install portaudio19-dev 
   pip install scipy numpy matplotlib cffi jupyter PyQt5 pyqtgraph==0.10 sounddevice soundfile
   
   sudo apt-get install ocl-icd-libopencl1 ocl-icd-opencl-dev opencl-headers
