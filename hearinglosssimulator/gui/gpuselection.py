@@ -22,6 +22,9 @@ class GpuDeviceSelection(QT.QWidget):
         
         self.resfresh_platform_list()
         self.combo_platform.currentIndexChanged.connect(self.resfresh_device_list)
+        
+        if len(pyopencl.get_platforms())>0:
+            self.resfresh_device_list(0)
     
     def set_configuration(self, platform_index = 0, device_index = 0):
         self.combo_platform.currentIndexChanged.disconnect(self.resfresh_device_list)
