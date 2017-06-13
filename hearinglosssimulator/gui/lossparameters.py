@@ -40,6 +40,7 @@ compression_ratio = OrderedDict(zip(('0%', '33%', '50%', '67%','100%'), (0, 1/3.
 
 hearing_level_preset = OrderedDict([
     ('No preset' , None),
+    ('All 37dB' , [37, 37, 37, 37, 37, 37, 37]),
     ('example 1' , [10, 4, 10, 13, 48, 58, 79]),
     ('60 years', [10, 15, 15, 15, 25, 35, 43]),
     ('80 years', [25, 30, 32, 28, 38, 50, 60]),

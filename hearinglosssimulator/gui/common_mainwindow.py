@@ -64,6 +64,15 @@ class CommonMainWindow(QT.QMainWindow):
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
         h.addWidget(self.but_enable_bypass)
         
+        for but in [self.but_compute_filters, self.but_start_stop, self.but_enable_bypass]:
+            but.setFixedSize(128, 128)
+            #~ but.setMaximumWidth(128)
+            #~ but.setMinimumHeight(128)
+            #~ but.setToolButtonStyle(T.ToolButtonTextUnderIcon)
+        
+            
+
+        
         
         self.mutex = Mutex()
         
@@ -161,9 +170,9 @@ class CommonMainWindow(QT.QMainWindow):
         self.set_bypass(checked)
         
         if checked:
-            self.but_enable_bypass.setIcon(QT.QIcon.fromTheme('process-stop'))
+            self.but_enable_bypass.setIcon(QT.QIcon(':/bypass.png'))
         else:
-            self.but_enable_bypass.setIcon(QT.QIcon.fromTheme(''))
+            self.but_enable_bypass.setIcon(QT.QIcon(''))
     
     
     def running(self):
