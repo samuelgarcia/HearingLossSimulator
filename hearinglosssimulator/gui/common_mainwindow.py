@@ -53,31 +53,36 @@ class CommonMainWindow(QT.QMainWindow):
         
         self.but_compute_filters = QT.QPushButton(u'Computed filters')
         self.but_compute_filters.clicked.connect(self.compute_filters)
+        self.but_compute_filters.setIcon(QT.QIcon.fromTheme(':/compute.png'))
         h.addWidget(self.but_compute_filters)
         
         self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable=True, enabled=False)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
-        self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
+        self.but_start_stop.setIcon(QT.QIcon.fromTheme(':/media-playback-stop.png'))
         h.addWidget(self.but_start_stop)
 
         self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable=True, enabled=False, checked=True)
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
+        self.but_enable_bypass.setIcon(QT.QIcon(':/bypass.png'))
         h.addWidget(self.but_enable_bypass)
         
         for but in [self.but_compute_filters, self.but_start_stop, self.but_enable_bypass]:
-            but.setFixedSize(128, 128)
+            but.setFixedSize(256, 64)
+            but.setIconSize(QT.QSize(48, 48))
             #~ but.setMaximumWidth(128)
             #~ but.setMinimumHeight(128)
             #~ but.setToolButtonStyle(T.ToolButtonTextUnderIcon)
         
-            
-
-        
         
         self.mutex = Mutex()
+
+        self.timer_icon = QT.QTimer(interval=1000)
+        self.timer_icon.timeout.connect(self.flash_icon)
+        self.flag_icon = True
+        self.timer_icon.start()
+        
         
         self.processing = None
-
     
     def flash_icon(self):
         if self.running():
@@ -85,9 +90,9 @@ class CommonMainWindow(QT.QMainWindow):
             if self.flag_icon:
                 self.but_start_stop.setIcon(QT.QIcon.fromTheme(''))
             else:
-                self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-start'))
+                self.but_start_stop.setIcon(QT.QIcon.fromTheme(':/media-playback-start.png'))
         else:
-            self.but_start_stop.setIcon(QT.QIcon.fromTheme('media-playback-stop'))
+            self.but_start_stop.setIcon(QT.QIcon.fromTheme(':/media-playback-stop.png'))
 
 
     def warn(self, title, text):
@@ -166,13 +171,14 @@ class CommonMainWindow(QT.QMainWindow):
                 self.but_enable_bypass.setEnabled(True)
     
     
+    
     def enable_bypass_simulator(self, checked):
         self.set_bypass(checked)
         
         if checked:
             self.but_enable_bypass.setIcon(QT.QIcon(':/bypass.png'))
         else:
-            self.but_enable_bypass.setIcon(QT.QIcon(''))
+            self.but_enable_bypass.setIcon(QT.QIcon(':/passthrough.png'))
     
     
     def running(self):

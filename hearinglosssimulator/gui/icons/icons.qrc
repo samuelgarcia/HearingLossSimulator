@@ -1,8 +1,12 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource>
-            <file alias="bypass.png">png/bypass.png</file>
+            <file alias="compute.png">png/compute.png</file>
+            <file alias="media-playback-start.png">png/media-playback-start.png</file>
+            <file alias="media-playback-stop.png">png/media-playback-stop.png</file>
+            <file alias="passthrough.png">png/passthrough.png</file>
             <file alias="led-red.png">png/led-red.png</file>
-            <file alias="led-blue.png">png/led-blue.png</file>
             <file alias="led-green.png">png/led-green.png</file>
+            <file alias="led-blue.png">png/led-blue.png</file>
+            <file alias="bypass.png">png/bypass.png</file>
     </qresource>
 </RCC>

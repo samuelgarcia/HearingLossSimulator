@@ -25,10 +25,6 @@ class AudioDeviceMainWindow(CommonMainWindow):
         self.hearingLossParameter = HearingLossParameter()
         self.mainlayout.addWidget(self.hearingLossParameter)
 
-        self.timer_icon = QT.QTimer(interval=1000)
-        self.timer_icon.timeout.connect(self.flash_icon)
-        self.flag_icon = True
-        self.timer_icon.start()
         
         
         self.audio_stream_done = False
