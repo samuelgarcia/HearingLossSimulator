@@ -43,28 +43,31 @@ class CommonMainWindow(QT.QMainWindow):
         # central layout
         w = QT.QWidget()
         self.setCentralWidget(w)
-        self.mainlayout  = QT.QVBoxLayout()
+        self.mainlayout  = QT.QHBoxLayout()
         w.setLayout(self.mainlayout)
         
         
-        self.mainlayout.addWidget(QT.QLabel(u'<h1><b>Start/Stop</b>'))
-        h = QT.QHBoxLayout()
-        self.mainlayout.addLayout(h)
+        #~ self.mainlayout.addWidget(QT.QLabel(u'<h1><b>Start/Stop</b>'))
+        v = self.firstlayout = QT.QVBoxLayout()
+        self.mainlayout.addLayout(v)
+        v.addWidget(QT.QLabel(u'<h1><b>Start/Stop</b>'))
         
         self.but_compute_filters = QT.QPushButton(u'Computed filters')
         self.but_compute_filters.clicked.connect(self.compute_filters)
         self.but_compute_filters.setIcon(QT.QIcon(':/compute.png'))
-        h.addWidget(self.but_compute_filters)
+        v.addWidget(self.but_compute_filters)
         
         self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable=True, enabled=False)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
         self.but_start_stop.setIcon(QT.QIcon(':/media-playback-stop.png'))
-        h.addWidget(self.but_start_stop)
+        v.addWidget(self.but_start_stop)
 
         self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable=True, enabled=False, checked=True)
         self.but_enable_bypass.toggled.connect(self.enable_bypass_simulator)
         self.but_enable_bypass.setIcon(QT.QIcon(':/bypass.png'))
-        h.addWidget(self.but_enable_bypass)
+        v.addWidget(self.but_enable_bypass)
+        
+        v.addStretch()
         
         for but in [self.but_compute_filters, self.but_start_stop, self.but_enable_bypass]:
             but.setFixedSize(256, 64)

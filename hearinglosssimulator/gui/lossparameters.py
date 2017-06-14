@@ -263,11 +263,13 @@ class HearingLossParameter(QT.QWidget):
         
         v.addWidget(QT.QLabel('Hear level presets:'))
         self.combo_hearing_level_preset = QT.QComboBox()
+        self.combo_hearing_level_preset.setMinimumHeight(48)
         v.addWidget(self.combo_hearing_level_preset)
         self.combo_hearing_level_preset.addItems(hearing_level_preset.keys())
         self.combo_hearing_level_preset.currentIndexChanged.connect(self.on_change_preset)
         v.addWidget(QT.QLabel('Compression healthiness:'))
         self.combo_compression_loss_preset = QT.QComboBox()
+        self.combo_compression_loss_preset.setMinimumHeight(48)
         v.addWidget(self.combo_compression_loss_preset)
         self.combo_compression_loss_preset.addItems(compression_ratio.keys())
         self.combo_compression_loss_preset.setCurrentIndex(2)

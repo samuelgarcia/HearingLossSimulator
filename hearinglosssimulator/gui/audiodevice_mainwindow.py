@@ -20,11 +20,13 @@ class AudioDeviceMainWindow(CommonMainWindow):
         self.createActions()
         self.createToolBars()
 
-        
-        self.mainlayout.addWidget(QT.QLabel(u'<h1><b>Setup loss on each ear</b>'))
-        self.hearingLossParameter = HearingLossParameter()
-        self.mainlayout.addWidget(self.hearingLossParameter)
 
+        v = QT.QVBoxLayout()
+        self.mainlayout.addLayout(v)
+        
+        v.addWidget(QT.QLabel(u'<h1><b>Setup loss on each ear</b>'))
+        self.hearingLossParameter = HearingLossParameter()
+        v.addWidget(self.hearingLossParameter)
         
         
         self.audio_stream_done = False
