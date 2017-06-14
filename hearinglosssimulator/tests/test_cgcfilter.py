@@ -55,15 +55,17 @@ def test_cgc_filter():
 
 
 def test_invcomp_filter():
-    #~ freqs = [1000.]
-    freqs = [5000.]
+    freqs = [1000.]
+    #~ freqs = [5000.]
     #~ freqs = [ 125*2**i  for i in range(7) ]
-    #~ freqs = hls.erbspace(80.,15000., 16.)
+    #~ freqs = hls.erbspace(80.,15000., 32.)
     
-    #~ compression_degree = [1]
+    #~ compression_degree = [1]* len(freqs) 
     #~ compression_degree = [0.5]
-    #~ compression_degree = [0.25]
-    compression_degree = [0.]
+    #~ compression_degree = [0.25] * len(freqs)
+    compression_degree = [0.] * len(freqs)
+    #~ compression_degree = [0.5] * len(freqs)
+    
     level_max = 100.
     level_step = 10.
     sample_rate = 44100.

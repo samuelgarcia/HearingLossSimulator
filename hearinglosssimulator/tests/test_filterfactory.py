@@ -6,8 +6,9 @@ import numpy as np
 def apply_and_plot(func, *args, **kargs):
     #~ from tools import sosfreqz
     from matplotlib import pyplot
+    freqs = [ 1000.]
     #~ freqs = [  200., 1000.,  5000. ]
-    freqs = [  200.,  758.18944907,  2042.9450242,   5000.        ]
+    #~ freqs = [  200.,  758.18944907,  2042.9450242,   5000.        ]
     sample_rate = 44100.
     
     coeff = func(freqs, sample_rate,*args, **kargs)
@@ -34,6 +35,17 @@ def test_asymmetric_compensation_coeffs():
     p3=0.2523*(1-0.0244*b)*(1+0.0574*abs(c))
     p4=1.0724
     apply_and_plot(hls.asymmetric_compensation_coeffs, b,c,p0,p1,p2,p3,p4, ncascade=4)
+    
+    
+    #~ b2 = 2.17
+    #~ c2 = 2.2
+    #~ p0=2
+    #~ p1=1.7818*(1-0.0791*b2)*(1-0.1655*abs(c2))
+    #~ p2=0.5689*(1-0.1620*b2)*(1-0.0857*abs(c2))
+    #~ p3=0.2523*(1-0.0244*b2)*(1+0.0574*abs(c2))
+    #~ p4=1.0724    
+    
+    #~ apply_and_plot(hls.asymmetric_compensation_coeffs, b2,c2,p0,p1,p2,p3,p4, ncascade=4)
 
 
 
@@ -57,6 +69,6 @@ def test_erbspace():
 
 if __name__ == '__main__':
     #~ test_gammatone()
-    #~ test_asymmetric_compensation_coeffs()
+    test_asymmetric_compensation_coeffs()
     #~ test_loggammachirp()
-    test_erbspace()
+    #~ test_erbspace()

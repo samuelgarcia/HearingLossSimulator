@@ -1,6 +1,7 @@
 import numpy as np
 import joblib
 import os
+import sys
 import pickle
 
 # this make readthedocs work
@@ -141,17 +142,17 @@ class BaseMultiBand:
         hash = joblib.hash(d)
         
         #TODO put this somewhere esle
-        cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache_filters')
+        #~ cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache_filters')
 
-        #~ if sys.platform.startswith('win'):
-            #~ dirname = os.path.join(os.environ['APPDATA'], 'HearingLossSimulator')
-        #~ elif  sys.platform.startswith('darwin'):
-            #~ dirname = '~/Library/Application Support/HearingLossSimulator/'
-        #~ else:
-            #~ dirname = os.path.expanduser('~/.config/HearingLossSimulator')
-
-
+        if sys.platform.startswith('win'):
+            dirname = os.path.join(os.environ['APPDATA'], 'HearingLossSimulator')
+        elif  sys.platform.startswith('darwin'):
+            dirname = '~/Library/Application Support/HearingLossSimulator/'
+        else:
+            dirname = os.path.expanduser('~/.config/HearingLossSimulator')
         
+        cache_dir = os.path.join(dirname, 'cache_filters')
+        print('cache_dir', cache_dir)
         filename = os.path.join(cache_dir, self.__class__.__name__, hash)
         return filename
 

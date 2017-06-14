@@ -97,6 +97,7 @@ def make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rat
     
     #noramlize for highest level
     for f, freq in enumerate(freqs):
+        #~ print('freq', freq)
         filter = np.concatenate([coefficients_pgc[f,:,:], coefficients_hpaf[f , -1, : , : ],coefficients_pgc[f,:,:] ], axis = 0)
         w, h = sosfreqz(filter, worN =NFFT)
         gain = np.max(np.abs(h))
@@ -105,6 +106,7 @@ def make_cgc_filter(freqs, compression_degree, level_max, level_step, sample_rat
     # compensate final gain of sum of all band freqs
     all = np.zeros(NFFT)
     for f, freq in enumerate(freqs):
+        #~ print('freq', freq)
         all_filter = np.concatenate([coefficients_pgc[f,:,:],coefficients_hpaf[f,-1,:,:], coefficients_pgc[f,:,:]], axis = 0)
         w, h = sosfreqz(all_filter,worN = NFFT)
         all += np.abs(h) 
@@ -205,13 +207,16 @@ def make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample
     pgc_1000Hz[0, :3] /= gain
     hpaf_1000Hz = np.zeros((len(levels), 4, 6), dtype = dtype)
     gain_controlled_by_alpha = {}
+    #~ print('all alpha', np.unique(compression_degree))
     for alpha in np.unique(compression_degree):
+        print('alpha', alpha)
         # Toshio Irino coefficient (if this is correct)
         # need to be check with irino
         frat0r = 1 + 0.466 * (1-alpha)
         frat1r =  - 0.0109 * (1-alpha)
         
         for l, level in enumerate(levels):
+            print('level', level)
             # minus for inverse compression = moving left
             frat = frat0r + frat1r * level
             freqs2 = _freqs*frat
@@ -226,6 +231,7 @@ def make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample
         
         gains = np.zeros(len(levels))
         for l, level in enumerate(levels):
+            print('level', level)
             filter = np.concatenate([pgc_1000Hz, hpaf_1000Hz[l, : , : ],pgc_1000Hz], axis = 0)
             w, h = sosfreqz(filter, worN =NFFT)
             #~ gains[l] = np.max(20*np.log10(np.abs(h)))

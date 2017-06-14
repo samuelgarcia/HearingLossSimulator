@@ -41,6 +41,7 @@ class InvComp(BaseMultiBand):
                     'levels', 'expdecays']
     
     def make_filters(self):
+        print('InvComp.make_filters')
         self.total_channel = self.nb_freq_band*self.nb_channel
         self.freqs = erbspace(self.low_freq,self.high_freq, self.nb_freq_band)
         
@@ -58,8 +59,8 @@ class InvComp(BaseMultiBand):
             interp = scipy.interpolate.interp1d(self.loss_params[chan]['freqs'], pl, bounds_error=False, fill_value=(pl[0], pl[-1]))
             passive_loss_db_all[chan] = interp(self.freqs)
             
-            self.passive_gain.extend(10**(passive_loss_db_all[chan]/20.))
-            
+            self.passive_gain.extend(10**(-passive_loss_db_all[chan]/20.))
+        #~ print(self.passive_gain)
         #~ print(self.freqs)
         #~ print(compresison_degree_all)
         #~ print(passive_loss_db_all)

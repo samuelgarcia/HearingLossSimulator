@@ -216,8 +216,11 @@ class WifiDeviceMainWindow(CommonMainWindow):
         return self.client.state=='audio-loop'
 
     def after_dialog(self):
-        self.check_wifi_params()
-        self.devicewidget.refresh_label_param()
+        try:
+            self.check_wifi_params()
+            self.devicewidget.refresh_label_param()
+        except:
+            pass
     
     @property
     def sample_rate(self):
