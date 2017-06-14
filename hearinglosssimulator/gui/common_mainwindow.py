@@ -53,12 +53,12 @@ class CommonMainWindow(QT.QMainWindow):
         
         self.but_compute_filters = QT.QPushButton(u'Computed filters')
         self.but_compute_filters.clicked.connect(self.compute_filters)
-        self.but_compute_filters.setIcon(QT.QIcon.fromTheme(':/compute.png'))
+        self.but_compute_filters.setIcon(QT.QIcon(':/compute.png'))
         h.addWidget(self.but_compute_filters)
         
         self.but_start_stop = QT.QPushButton(u'Start/Stop playback', checkable=True, enabled=False)
         self.but_start_stop.toggled.connect(self.start_stop_audioloop)
-        self.but_start_stop.setIcon(QT.QIcon.fromTheme(':/media-playback-stop.png'))
+        self.but_start_stop.setIcon(QT.QIcon(':/media-playback-stop.png'))
         h.addWidget(self.but_start_stop)
 
         self.but_enable_bypass = QT.QPushButton(u'Enable/bypass simulator', checkable=True, enabled=False, checked=True)
@@ -88,11 +88,11 @@ class CommonMainWindow(QT.QMainWindow):
         if self.running():
             self.flag_icon = not(self.flag_icon)
             if self.flag_icon:
-                self.but_start_stop.setIcon(QT.QIcon.fromTheme(''))
+                self.but_start_stop.setIcon(QT.QIcon(''))
             else:
-                self.but_start_stop.setIcon(QT.QIcon.fromTheme(':/media-playback-start.png'))
+                self.but_start_stop.setIcon(QT.QIcon(':/media-playback-start.png'))
         else:
-            self.but_start_stop.setIcon(QT.QIcon.fromTheme(':/media-playback-stop.png'))
+            self.but_start_stop.setIcon(QT.QIcon(':/media-playback-stop.png'))
 
 
     def warn(self, title, text):
