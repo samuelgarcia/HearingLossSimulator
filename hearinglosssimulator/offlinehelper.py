@@ -156,13 +156,14 @@ class WaveNumpy:
         assert sl0.step is None
         self.file.seek(sl0.start)
         buf = self.file.read(frames=sl0.stop-sl0.start,dtype='float32', always_2d=True)
-        buf = buf[:, sl1]
+        #~ buf = buf[:, sl1].copy()
         return buf
         
         
         
 
-def compute_wave_file(in_filename, out_filename, duration_limit=None, processing_class=_default_precessing_class,  **params):
+def compute_wave_file(in_filename, out_filename, duration_limit=None, processing_class=_default_precessing_class, 
+                            gpu_platform_index=None, gpu_device_index=None, **params):
     """
     Run InvCGC/InvComp offline on a wave file.
     
@@ -187,11 +188,18 @@ def compute_wave_file(in_filename, out_filename, duration_limit=None, processing
     
     nb_channel = in_wav.channels
     chunksize = params['chunksize']
+    #~ print('chunksize', chunksize)
     backward_chunksize =  params['backward_chunksize']
     if len(params['loss_params'])<nb_channel:
         params['loss_params']['right'] = dict(params['loss_params']['left'])
     
+    params['apply_configuration_at_init'] = False
     processing = processing_class(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **params)
+    processing._load_or_make_filters()
+    processing.create_opencl_context(gpu_platform_index=gpu_platform_index, gpu_device_index=gpu_device_index)
+    processing.initlalize_cl()
+    
+    
     
     loop = make_processing_loop(processing, in_buffer, chunksize, sample_rate, dtype='float32', 
             processing_conf=params, buffersize_margin=0, time_stats=False)
