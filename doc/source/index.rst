@@ -54,6 +54,7 @@ There are 2 steps:
   1. install python and related stuff 2 cases here:
     * with anaconda (prefered on windows and OSX)
     * pip and virtualenvwrapepr (prefered on linux)
+    * MacPorts and pip for OSX
   2. install opencl drivers themself many case:
     * windows with Intel GPU
     * windows with Nvidia GPU
@@ -63,8 +64,9 @@ There are 2 steps:
 .. warning::
     OpenCL is a GPU language progamming. The central part of the simulator is done
     with OpenCL. While OpenCL is an open implementation, OpenCL drivers by themself
-    are not opensource. You need to install OpenCL driver of your GPU device (and sometime
-    the opencl sdk) manually.
+    are not opensource. You need to install the OpenCL drivers of your GPU device (and sometimes
+    the OpenCL SDK) manually. On macOS, OpenCL is natively `installed <https://support.apple.com/en-us/HT202823>`_
+    and no driver needs to be installed.
 
     
 
@@ -75,7 +77,7 @@ Do:
 
   1. Download anaconda here https://www.continuum.io/downloads. Take **python 3.6**
   2. Install it in user mode (no admin password)
-  3. Lanch **anaconda navigator**
+  3. Launch **anaconda navigator**
   4. Go on the tab **environements**, click on **root** context menu.
   5. **Open Terminal** and do this::
     
@@ -97,7 +99,7 @@ Do:
 Step 1 - Case 2 : with pip (prefered on linux)
 ++++++++++++++++++++++++++++++++++++++++++++++
 
-In a terminal in ubuntu 16.04 do::
+In a terminal in Ubuntu 16.04 do::
 
   sudo apt-get install virtualenvwrapper python3.5-dev python3-tk
   mkvirtualenv hls   --python=/usr/bin/python3.5
@@ -108,7 +110,32 @@ In a terminal in ubuntu 16.04 do::
   sudo apt-get install ocl-icd-libopencl1 ocl-icd-opencl-dev opencl-headers
   pip install pyopencl
   pip install https://github.com/samuelgarcia/hearingLossSimulator/archive/master.zip
-  
+
+Step 1 - Case 3 : MacPorts and pip for OSX
+++++++++++++++++++++++++++++++++++++++++++
+
+While this method works, the fact that it does not use virtualenv makes it *potentially harmful* to your machine,
+so use wisely... Now this recipe assumes you have a working `MacPorts <https://www.macports.org/>`_ installation, with XCode activated, etc.
+
+In a Terminal, do::
+
+   sudo port install python35
+   sudo port install py35-numpy py35-scipy py35-pyqt5 py35-pip py35-pyopencl
+   
+Once Python 3.5 installed, we need to tell that the default Python should be that one. To avoid messing up with the system :code:`python`, it is perhaps wise to stick to :code:`python3` (that's where it would be better to use virtualenv). To do this we do::
+
+   sudo port select --set python3 python35
+   sudo port select --set pip pip35
+
+Then we are ready to install HearingLossSimulator::
+
+   sudo -H pip install  https://github.com/samuelgarcia/hearingLossSimulator/archive/master.zip
+
+If you are using Python 2.7 as your default Python, then we need to tell :code:`pip` to go back to 2.7::
+
+   sudo port select --set pip pip27
+
+Note: it may very likely also work with Python 3.6, but it has only been tested with Python 3.5.
 
 Step 2 - Windows with Intel
 +++++++++++++++++++++++++++
@@ -127,7 +154,7 @@ Go here https://developer.nvidia.com/opencl and download opencl drivers.
 Step 2 - Linux with Intel
 +++++++++++++++++++++++++++
 
-2 possibilities:
+Two possibilities:
 
   * The open source (sometimes bad perf)::
   
@@ -142,9 +169,15 @@ Step 2 - Linux with Intel
 Step 2 - Linux with NVidia
 +++++++++++++++++++++++++++
 
-sudo apt-get install nvidia-opencl-icd-340
+In a console::
+
+   sudo apt-get install nvidia-opencl-icd-340
 
 
+Step 2 - macOS / Mac OS X
++++++++++++++++++++++++++
+
+The OpenCL drivers should already be installed. Check this page for the available version: https://support.apple.com/en-us/HT202823
 
 
 Launch
