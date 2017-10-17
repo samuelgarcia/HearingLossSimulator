@@ -73,7 +73,11 @@ def play_with_vlc(sounds, sample_rate = 44100):
     
     #~ print ' '.join(soundfilenames)
     #~ os.system('vlc '+' '.join(soundfilenames))
-    os.system('vlc '+' '.join('"{}"'.format(f) for f in soundfilenames))
+    if sys.platform.startswith('darwin'):
+        vlc = '/Applications/VLC.app/Contents/MacOS/VLC'
+    else:
+        vlc = 'vlc'
+    os.system(vlc+" "+' '.join('"{}"'.format(f) for f in soundfilenames))
 
 
 
