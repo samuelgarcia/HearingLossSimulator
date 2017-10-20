@@ -9,8 +9,8 @@
 
 
 __constant int  nb_level = %(nb_level)d;
-__constant float calibration = %(calibration)8.4f;
-__constant float levelstep = %(levelstep)8.4f;
+__constant float calibration = %(calibration)8.4ff;
+__constant float levelstep = %(levelstep)8.4ff;
 __constant int levelmax = %(levelmax)d;
 
 __kernel void sos_filter(__global  float *input, __global  float *output, __constant  float *coefficients, 
