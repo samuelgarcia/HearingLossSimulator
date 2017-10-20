@@ -51,7 +51,7 @@ Installation
 ------------
 
 There are 2 steps:
-  1. install python and related stuff 2 cases here:
+  1. install python and related stuff 3 cases here:
     * with anaconda (prefered on windows and OSX)
     * pip and virtualenvwrapepr (prefered on linux)
     * MacPorts and pip for OSX
@@ -60,6 +60,7 @@ There are 2 steps:
     * windows with Nvidia GPU
     * linux with Intel GPU
     * linux with Nvidia GPU
+    * OSX with Intel GPU
 
 .. warning::
     OpenCL is a GPU language progamming. The central part of the simulator is done
