@@ -147,7 +147,7 @@ class BaseMultiBand:
         if sys.platform.startswith('win'):
             dirname = os.path.join(os.environ['APPDATA'], 'HearingLossSimulator')
         elif  sys.platform.startswith('darwin'):
-            dirname = '~/Library/Application Support/HearingLossSimulator/'
+            dirname = os.path.expanduser('~/Library/Application Support/HearingLossSimulator/')
         else:
             dirname = os.path.expanduser('~/.config/HearingLossSimulator')
         
