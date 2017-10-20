@@ -35,7 +35,7 @@ def sosfreqz(coeff,worN = 4096):
 
 def plot_filter(coeff, ax, sample_rate, worN = 4096, **kargs):
     w, h = sosfreqz(coeff,worN = worN)
-    ax.plot(w/np.pi*(sample_rate/2.), 20*np.log10(h), **kargs)
+    ax.plot(w/np.pi*(sample_rate/2.), 20*np.log10(np.abs(h)), **kargs)
 
 
 
