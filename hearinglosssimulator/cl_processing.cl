@@ -1,13 +1,17 @@
 
 
 #define chunksize %(chunksize)d
+//#define nb_level %(nb_level)d
+//#define calibration %(calibration)8.4f
+//#define levelstep %(levelstep)8.4f
+//#define levelmax %(levelmax)d
 
-#define nb_level %(nb_level)d
 
-#define calibration %(calibration)8.4f
-#define levelstep %(levelstep)8.4f
-#define levelmax %(levelmax)d
 
+__constant int  nb_level = %(nb_level)d;
+__constant float calibration = %(calibration)8.4f;
+__constant float levelstep = %(levelstep)8.4f;
+__constant int levelmax = %(levelmax)d;
 
 __kernel void sos_filter(__global  float *input, __global  float *output, __constant  float *coefficients, 
             __global float *zi, int direction, int nb_section) {
@@ -159,7 +163,7 @@ __kernel void dynamic_sos_filter(__global  float *input, __global  float * level
         //filtering
         if (s2>=0 && (s2<chunksize)){
             //filterindex = (int) levels[offset_buf+s2];
-            filterindex = (int) (levels[offset_buf+s2]/ (float) levelstep);
+            filterindex = (int) (levels[offset_buf+s2]/ levelstep);
             
             offset_filt2 = offset_filt+filterindex*nb_section*6+section*6;
             w0 = out_channel[s2];
@@ -192,7 +196,7 @@ __kernel void dynamic_gain(__global  float *input, __global  float * levels, __g
     int pos = get_global_id(1); //sample index
     
     int offset_buf = chan*chunksize;
-    int gainindex = (int) (levels[offset_buf+pos]/ (float)levelstep);
+    int gainindex = (int) (levels[offset_buf+pos]/ levelstep);
     output[offset_buf+pos] = input[offset_buf+pos] * gain_controlled[chan*nb_level+gainindex];
     
 }
