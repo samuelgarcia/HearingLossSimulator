@@ -294,12 +294,12 @@ def test_passive_loss():
     
     
 if __name__ =='__main__':
-    test_invcgc()
+    #~ test_invcgc()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_hpaf()
     #~ test_pgc2()
-    #~ test_passive_loss()
+    test_passive_loss()
     
 
 

@@ -1,17 +1,17 @@
 
 
 #define chunksize %(chunksize)d
-//#define nb_level %(nb_level)d
+#define nb_level %(nb_level)d
 //#define calibration %(calibration)8.4f
 //#define levelstep %(levelstep)8.4f
-//#define levelmax %(levelmax)d
+#define levelmax %(levelmax)d
 
 
 
-__constant int  nb_level = %(nb_level)d;
+//__constant int  nb_level = %(nb_level)d;
 __constant float calibration = %(calibration)8.4ff;
 __constant float levelstep = %(levelstep)8.4ff;
-__constant int levelmax = %(levelmax)d;
+//__constant int levelmax = %(levelmax)d;
 
 __kernel void sos_filter(__global  float *input, __global  float *output, __constant  float *coefficients, 
             __global float *zi, int direction, int nb_section) {
@@ -68,10 +68,11 @@ __kernel void sos_filter(__global  float *input, __global  float *output, __cons
     if (section ==(nb_section-1)){
         for (int s=0; s<chunksize;s++) output[offset_buf+s] = out_channel[s];
     }
-       
+
 }
 
 
+/*
 __kernel void forward_filter(__global  float *input, __global  float *output, __constant  float *coefficients, __global float *zi,  int nb_section){
     sos_filter(input, output, coefficients, zi,  1, nb_section);
 }
@@ -79,7 +80,7 @@ __kernel void forward_filter(__global  float *input, __global  float *output, __
 __kernel void backward_filter(__global  float *input, __global  float *output, __constant  float *coefficients, __global float *zi,  int nb_section) {
     sos_filter(input, output, coefficients, zi,  -1, nb_section);
 }
-
+*/
 
 
 /*

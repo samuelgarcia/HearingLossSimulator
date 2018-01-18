@@ -10,8 +10,8 @@ import helper
 
 #~ exit()
 
-nb_channel = 2
-#~ nb_channel = 1
+#~ nb_channel = 2
+nb_channel = 1
 
 sample_rate =44100.
 
@@ -299,11 +299,11 @@ def test_passive_loss():
     
     
 if __name__ =='__main__':
-    test_invcomp()
+    #~ test_invcomp()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_dyngain()
-    #~ test_pgc2()
+    test_pgc2()
     #~ test_passive_loss()
     
 
