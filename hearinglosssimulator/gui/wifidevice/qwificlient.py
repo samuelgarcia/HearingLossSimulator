@@ -78,6 +78,8 @@ class BaseThreadStream(QT.QThread):
         
         broken = False
         
+        
+        first_loop = True
         while True:
             if not self.is_running():
                 break
@@ -85,7 +87,13 @@ class BaseThreadStream(QT.QThread):
             try:
             #~ if True:
                 #recv
-                header, data = self.client_protocol.receiv_one_packet(variable_size=1024, timeout=pt.TIMEOUT_AUDIO)
+                if first_loop:
+                    first_loop = False
+                    timeout = 1.
+                else:
+                    timeout=pt.TIMEOUT_AUDIO
+                
+                header, data = self.client_protocol.receiv_one_packet(variable_size=1024, timeout=timeout)
                 if not self.is_running():
                     break
                 

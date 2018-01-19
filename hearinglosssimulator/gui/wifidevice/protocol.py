@@ -71,11 +71,17 @@ class ClientProtocol:
             #~ print('i', i)
             header, data = self.receiv_one_packet(timeout=timeout_per_packet)
             #~ print(header)
-            if header['type'] == pt.ACK and header['option'] == self.packet_num:
-                done = True
-                break
-            if header['type'] == pt.ACK and header['option'] == 0:
-                raise(NoAckError('NO-ACK'))
+            if header['type'] == pt.ACK:
+                if header['option'] == self.packet_num:
+                    done = True
+                    break
+                
+                elif header['option'] == 0:
+                    raise(NoAckError('NO-ACK'))
+                
+                else:
+                    print('!!!!! ACK with bad num_paquet', self.packet_num, header['option'] )
+                
         
         #~ assert done, 'No ACK for packet {} {}'.format(self.packet_num, reason)
         if not done:
@@ -107,7 +113,7 @@ class ClientProtocol:
         self.send_one_packet(type=pt.STOP_STREAM, option=pt.stream_types[stream_type])
         if insist:
             try:
-                self.wait_for_ack(reason='STOP_STREAM '+ stream_type, nb_try=10)
+                self.wait_for_ack(reason='STOP_STREAM '+ stream_type, nb_try=15)
             except:
                 for i in range(5):
                     print('NEW TRY stop stream', i)

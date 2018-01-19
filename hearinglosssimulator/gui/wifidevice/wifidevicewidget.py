@@ -84,8 +84,9 @@ class WifiDeviceWidget(QT.QWidget):
     def refresh_label_param(self):
         sr = self.client.secure_call('get_sample_rate')
         nb_lat = self.client.secure_call('get_audio_latency')
+        ssid = self.client.secure_call('get_ssid')
         latency = nb_lat * 256 /sr*1000
-        text = 'sample_rate: {} \nnb_buffer_latency: {}  \nlatency: {:.1f}ms'.format(sr, nb_lat,latency)
+        text = 'ssid: {}\n sample_rate: {} \n nb_buffer_latency: {}  \n latency: {:.1f}ms'.format(ssid, sr, nb_lat,latency)
         self.label_param.setText(text)
     
     def refresh_missing_label(self):

@@ -13,9 +13,9 @@ sample_rate = 44100.
 #~ sample_rate = 20000.
 #~ sample_rate = 15000.
 
-#~ chunksize = 256
+chunksize = 256
 #~ chunksize = 512
-chunksize = 1024
+#~ chunksize = 1024
 #~ chunksize = 2048
 #~ backward_chunksize = chunksize*5
 #~ backward_chunksize = chunksize*4
@@ -24,7 +24,7 @@ chunksize = 1024
 lost_chunksize = 1024
 backward_chunksize = lost_chunksize + chunksize
 
-nloop = 100
+nloop = 1000
 
 length = int(chunksize*nloop)
 

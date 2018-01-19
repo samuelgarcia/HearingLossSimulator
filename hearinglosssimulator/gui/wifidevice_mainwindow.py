@@ -93,8 +93,11 @@ class ThreadSimulatorAudioStream(BaseThreadStream):
                 sound_in_float /= 2**15
                 self.index += 256
                 #~ print('self.index', self.index, sound_in_float.shape)
+                #~ t2 = time.perf_counter()
                 returns = self.processing.proccesing_func(self.index, sound_in_float)
                 index2, sound_out_float = returns['main_output']
+                
+                #~ t3 = time.perf_counter()
                 
                 #~ print('index2', index2)
                 if index2 is not None:
@@ -104,7 +107,12 @@ class ThreadSimulatorAudioStream(BaseThreadStream):
                 
                 
                 #~ t1 = time.perf_counter()
-                #~ print(int(t1-t0)*1000/1000., 'ms')
+                #~ print(int(t2*10000-t0*10000)/10, 'ms')
+                
+                #~ print(int(t3*10000-t2*10000)/10, 'ms')
+                #~ print(int(t1*10000-t3*10000)/10, 'ms')
+                #~ print('tot', int(t1*10000-t0*10000)/10, 'ms')
+                #~ print()
                 #~ print(t1-t0, 's')
         
         variable = sound_out_int.tobytes()

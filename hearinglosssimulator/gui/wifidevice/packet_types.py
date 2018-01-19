@@ -88,7 +88,8 @@ stream_types = {'audio':AUDIO_STREAM, 'test':TEST_STREAM, 'spatialization':SPAT_
 
 
 # TIMEOUT
-TIMEOUT_AUDIO = 0.2 #s
+#~ TIMEOUT_AUDIO = 0.2 #s
+TIMEOUT_AUDIO = 0.5 #s
 TIMEOUT_TEST = 0.5 #s
 TIMEOUT_PING_PONG = 0.3 #s
 TIMEOUT_ACK_START_STREAM = 1.#s
