@@ -50,7 +50,6 @@ class BaseMultiBand:
     def create_opencl_context(self, gpu_platform_index=None, gpu_device_index=None):
         self.gpu_platform_index = gpu_platform_index
         self.gpu_device_index = gpu_device_index
-        
         if self.gpu_platform_index is None:
             self.ctx = pyopencl.create_some_context()
         else:

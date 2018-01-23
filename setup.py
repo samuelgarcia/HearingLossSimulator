@@ -43,7 +43,8 @@ setup(
     entry_points={
           'console_scripts': ['hls=hearinglosssimulator.scripts:hls',
                                             'hlswifi=hearinglosssimulator.scripts:open_wifidevice_mainwindow',
-                                            'wifidebug=hearinglosssimulator.scripts:open_wifidebug',
+                                            'hls_debug_wifi=hearinglosssimulator.scripts:open_debug_wifi',
+                                            'hls_debug_gpu=hearinglosssimulator.scripts:open_debug_gpu',
                                             ],
         },
 
