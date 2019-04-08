@@ -74,6 +74,7 @@ def play_sinus(freq, dbgain, duration, device='default', nb_channel=2):
     if device is None:
         device='default'
     dev = sd.query_devices(device=device)
+    print(dev)
     
     sample_rate = dev['default_samplerate']
     
