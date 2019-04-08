@@ -14,7 +14,6 @@ import argparse
 comand_list =[
     'audiodevice',
     'wifidevice',
-    
 ]
 txt_command_list = ', '.join(comand_list)
 
@@ -63,6 +62,16 @@ def open_debug_gpu():
     win.show()
     app.exec_()    
 
+def open_debug_audio():
+    import pyqtgraph as pg
+    from hearinglosssimulator.gui.audioselection import AudioDeviceSelection
+
+    app = pg.mkQApp()
+    win = AudioDeviceSelection()
+    win.set_configuration()
+    win.show()
+    app.exec_()    
+
 
     
 def hls():
@@ -92,16 +101,18 @@ def hls():
     elif command=='wifidevice':
         open_hls_wifi()
         
-    elif command=='wifidebug':
-        open_debug_wifi()
+    #~ elif command=='wifidebug':
+        #~ open_debug_wifi()
+
 
 
 
 if __name__=='__main__':
     #~ open_audiodevice_mainwindow()
-    open_wifidevice_mainwindow()
+    #~ open_wifidevice_mainwindow()
     #~ open_debug_wifi()
     #~ open_debug_gpu()
+    open_debug_audio_loop()
 
 
 

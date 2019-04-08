@@ -45,6 +45,7 @@ setup(
                                             'hlswifi=hearinglosssimulator.scripts:open_wifidevice_mainwindow',
                                             'hls_debug_wifi=hearinglosssimulator.scripts:open_debug_wifi',
                                             'hls_debug_gpu=hearinglosssimulator.scripts:open_debug_gpu',
+                                            'hls_debug_audio=hearinglosssimulator.scripts:open_debug_audio',
                                             ],
         },
 
