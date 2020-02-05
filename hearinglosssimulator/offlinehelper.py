@@ -88,14 +88,14 @@ def run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='f
 
 
 #TODO remove this soon
-def run_class_offline(processing_class, in_buffer, chunksize, sample_rate, dtype='float32', 
-            processing_conf={}, buffersize_margin=0, time_stats=True):
-    print('DO NOT USE THIS FUNCTION ANYMORE but run_instance_offline')
-    nb_channel = in_buffer.shape[1]
-    processing = processing_class(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **processing_conf)
-    online_arrs = run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype=dtype, 
-            buffersize_margin=buffersize_margin, time_stats=time_stats)
-    return processing, online_arrs
+#~ def run_class_offline(processing_class, in_buffer, chunksize, sample_rate, dtype='float32', 
+            #~ processing_conf={}, buffersize_margin=0, time_stats=True):
+    #~ print('DO NOT USE THIS FUNCTION ANYMORE but run_instance_offline')
+    #~ nb_channel = in_buffer.shape[1]
+    #~ processing = processing_class(nb_channel=nb_channel, sample_rate=sample_rate, dtype=dtype, **processing_conf)
+    #~ online_arrs = run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype=dtype, 
+            #~ buffersize_margin=buffersize_margin, time_stats=time_stats)
+    #~ return processing, online_arrs
 
 
 def compute_numpy(sound, sample_rate, processing_class=_default_precessing_class, **params):

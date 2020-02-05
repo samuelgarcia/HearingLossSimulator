@@ -55,21 +55,22 @@ def test_cgc_filter():
 
 
 def test_invcomp_filter():
-    freqs = [1000.]
+    #~ freqs = [1000.]
     #~ freqs = [5000.]
     #~ freqs = [ 125*2**i  for i in range(7) ]
-    #~ freqs = hls.erbspace(80.,15000., 32.)
+    freqs = hls.erbspace(80.,15000., 32.)
     
     #~ compression_degree = [1]* len(freqs) 
     #~ compression_degree = [0.5]
     #~ compression_degree = [0.25] * len(freqs)
-    compression_degree = [0.] * len(freqs)
-    #~ compression_degree = [0.5] * len(freqs)
+    #~ compression_degree = [0.] * len(freqs)
+    compression_degree = [0.5] * len(freqs)
     
     level_max = 100.
     level_step = 10.
     sample_rate = 44100.
     coefficients_pgc, gain_controlled, levels, band_overlap_gain = hls.make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample_rate)
+    print('ici, band_overlap_gain', band_overlap_gain)
     #~ print(gain_controlled)
     #~ fig, ax = plt.subplots()
     
@@ -114,6 +115,6 @@ def test_invcomp_filter():
     
     
 if __name__ == '__main__':
-    test_cgc_filter()
-    #~ test_invcomp_filter()
+    #~ test_cgc_filter()
+    test_invcomp_filter()
     

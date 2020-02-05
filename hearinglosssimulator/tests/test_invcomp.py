@@ -41,7 +41,10 @@ def test_invcomp():
     processing_conf = dict(nb_freq_band=32, level_step=1., level_max = 100., loss_params=loss_params, 
                 low_freq=100., high_freq=15000.,
                 debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize)
-    processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    #~ processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+    online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32',  buffersize_margin=backward_chunksize, time_stats=True)
+    
     
     
     print('nlevel', processing.levels.size, 'nb_freq_band', processing.nb_freq_band)
@@ -88,7 +91,10 @@ def test_pgc1():
     loss_params['right'] = loss_params['left']
 
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    #~ processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+    online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32',  buffersize_margin=backward_chunksize, time_stats=True)
+    
     
     n = processing.nb_freq_band
     in_buffer2 = np.tile(in_buffer,(1, processing.nb_freq_band))
@@ -126,7 +132,10 @@ def test_levels():
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    #~ processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+    online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32',  buffersize_margin=backward_chunksize, time_stats=True)
+    
     
     freq_band = 2
     
@@ -174,7 +183,12 @@ def test_dyngain():
     loss_params['right'] = loss_params['left']
     
     processing_conf = dict(nb_freq_band=5, level_max=120, level_step=120, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    
+    #~ processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+    online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32',  buffersize_margin=backward_chunksize, time_stats=True)
+    
+    
     
     #~ assert len(processing.levels)==1
     freq_band = 2
@@ -219,7 +233,10 @@ def test_pgc2():
                 low_freq = 60., high_freq = 15000.,
                 loss_params = loss_params,
                 chunksize=chunksize, backward_chunksize=backward_chunksize)
-    processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    #~ processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+    online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32',  buffersize_margin=backward_chunksize, time_stats=True)
+    
     
     freq_band = 4
     
@@ -263,7 +280,10 @@ def test_passive_loss():
     loss_params['right'] = loss_params['left']
 
     processing_conf = dict(nb_freq_band=32, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
-    processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    #~ processing, online_arrs = hls.run_class_offline(hls.InvComp, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
+    processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate, dtype='float32', **processing_conf)
+    online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate, dtype='float32',  buffersize_margin=backward_chunksize, time_stats=True)
+    
     
     n = processing.nb_freq_band
     
@@ -299,11 +319,11 @@ def test_passive_loss():
     
     
 if __name__ =='__main__':
-    #~ test_invcomp()
+    test_invcomp()
     #~ test_pgc1()
     #~ test_levels()
     #~ test_dyngain()
-    test_pgc2()
+    #~ test_pgc2()
     #~ test_passive_loss()
     
 

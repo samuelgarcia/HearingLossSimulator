@@ -124,7 +124,7 @@ def test_levels():
     processing_conf = dict(nb_freq_band=5, level_step=10, debug_mode=True, chunksize=chunksize, backward_chunksize=backward_chunksize, loss_params=loss_params)
     processing, online_arrs = hls.run_class_offline(hls.InvCGC, in_buffer, chunksize, sample_rate, processing_conf=processing_conf, buffersize_margin=backward_chunksize)
     
-    freq_band = 2
+    freq_band = 1
     
     out_pgc1 = online_arrs['pgc1']
     hilbert_env = np.abs(scipy.signal.hilbert(out_pgc1[:, freq_band], axis=0))
@@ -296,10 +296,10 @@ def test_passive_loss():
 if __name__ =='__main__':
     #~ test_invcgc()
     #~ test_pgc1()
-    #~ test_levels()
+    test_levels()
     #~ test_hpaf()
     #~ test_pgc2()
-    test_passive_loss()
+    #~ test_passive_loss()
     
 
 

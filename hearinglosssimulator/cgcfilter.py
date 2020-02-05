@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.signal
 import scipy.interpolate
+import matplotlib.pyplot as plt
 
 from .filterfactory import (gammatone, asymmetric_compensation_coeffs, loggammachirp, erbspace)
 from .tools import sosfreqz
@@ -163,6 +164,9 @@ def make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample
     """
     freqs = np.asarray(freqs)
     compression_degree = np.asarray(compression_degree)
+    assert np.all((compression_degree>=0.) & (compression_degree<=1.)), 'compression degree must in 0-1 range'
+    
+    
     
     nb_freq_band = len(freqs)
     
@@ -283,6 +287,7 @@ def make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample
     fft_freqs = w/np.pi*(sample_rate/2.)
     #all = all[(fft_freqs>freqs[0]) & (fft_freqs<freqs[-1])] 
     
+    
     # this is bad because of side effect
     #dbgain_final = -np.mean(20*np.log10(all))
     
@@ -291,7 +296,13 @@ def make_invcomp_filter(freqs, compression_degree, level_max, level_step, sample
     band_overlap_gain = 10**(band_overlap_gain_db/20.)
     
     #~ print('band_overlap_gain_db', band_overlap_gain_db)
-    
+    #~ print('band_overlap_gain', band_overlap_gain)
+    #~ fig, ax = plt.subplots()
+    #~ ax.plot(fft_freqs, all)
+    #~ fig, ax = plt.subplots()
+    #~ ax.plot(fft_freqs, 20*np.log10(all))
+    #~ plt.show()
+
     return coefficients_pgc, gain_controlled, levels, band_overlap_gain
 
 
