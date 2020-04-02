@@ -31,10 +31,12 @@ params = dict(
         chunksize=chunksize, backward_chunksize=backward_chunksize, 
     )
 
+gpu_platform_index = 0 # Put None to manually select
+gpu_device_index   = 1 # Put None to manually select
 
 processing = hls.InvComp(nb_channel=nb_channel, sample_rate=sample_rate,
         dtype='float32', apply_configuration_at_init=False, **params)
-processing.initialize()
+processing.initialize(gpu_platform_index, gpu_device_index)
 
 
 # define the callback audio wire
