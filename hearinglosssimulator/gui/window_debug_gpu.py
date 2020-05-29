@@ -91,7 +91,7 @@ class WindowDebugGPU(QT.QWidget):
             processing = _class(nb_channel=nb_channel, sample_rate=sample_rate,  apply_configuration_at_init=False, **processing_conf)
             processing.create_opencl_context(gpu_platform_index=gpu_platform_index, gpu_device_index=gpu_device_index)
             print(processing.ctx)
-            processing.initialize()
+            processing.initialize(gpu_platform_index, gpu_device_index)
             online_arrs = hls.run_instance_offline(processing, in_buffer, chunksize, sample_rate,
                         buffersize_margin=backward_chunksize, time_stats=True)
 
